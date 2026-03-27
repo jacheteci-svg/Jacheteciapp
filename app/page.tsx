@@ -183,21 +183,21 @@ export default async function Home() {
                <h2 className="text-white text-3xl md:text-5xl font-black tracking-tight">Besoin d'aide ?</h2>
                <p className="text-slate-400 font-medium">Notre service client est disponible 7j/7 pour vous accompagner.</p>
             </div>
-             <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
-                <a href="https://jachete.ci/shop/" className="bg-brand-primary text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-brand-primary/90 transition-colors shadow-xl shadow-brand-primary/20">
+             <div className="flex flex-col lg:flex-row gap-8 justify-center items-center">
+                <a href="https://jachete.ci/shop/" className="bg-brand-primary text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-brand-primary/90 transition-colors shadow-xl shadow-brand-primary/20 whitespace-nowrap">
                    Voir plus d'articles
                 </a>
-                <div className="flex flex-row flex-wrap gap-4 justify-center">
-                   <a href="tel:+2250172571352" className="bg-white/5 text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-white/10 transition-colors flex items-center gap-3">
-                      <span className="w-2 h-2 bg-brand-primary rounded-full animate-pulse"></span>
+                <div className="flex flex-row items-center gap-4">
+                   <a href="tel:+2250172571352" className="bg-white/5 text-white px-6 py-4 rounded-2xl font-bold text-base hover:bg-white/10 transition-colors flex items-center gap-3 whitespace-nowrap">
+                      <span className="w-2.5 h-2.5 bg-brand-primary rounded-full animate-pulse"></span>
                       +225 01 72 57 13 52
                    </a>
-                   <a href="tel:+2250506844901" className="bg-white/5 text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-white/10 transition-colors flex items-center gap-3">
-                      <span className="w-2 h-2 bg-brand-secondary rounded-full animate-pulse"></span>
+                   <a href="tel:+2250506844901" className="bg-white/5 text-white px-6 py-4 rounded-2xl font-bold text-base hover:bg-white/10 transition-colors flex items-center gap-3 whitespace-nowrap">
+                      <span className="w-2.5 h-2.5 bg-brand-secondary rounded-full animate-pulse"></span>
                       +225 05 06 84 49 01
                    </a>
                 </div>
-                <a href="https://wa.me/2250506844901?text=Bonjour, je souhaite commander." className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
+                <a href="https://wa.me/2250506844901?text=Bonjour, je souhaite commander." className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20 whitespace-nowrap">
                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                       <path d="M12.031 6.172c-2.311 0-4.189 1.878-4.189 4.189 0 2.308 1.878 4.189 4.189 4.189 2.311 0 4.19-1.881 4.19-4.189S14.342 6.172 12.031 6.172zm0 7.378c-1.758 0-3.189-1.431-3.189-3.189s1.431-3.189 3.189-3.189 3.189 1.431 3.189 3.189-1.431 3.189-3.189 3.189zM12.031 2C6.49 2 2 6.49 2 12.03c0 1.731.438 3.356 1.206 4.778l-1.206 4.4 4.541-1.191a10.031 10.031 0 004.49 1.053c5.541 0 10.031-4.49 10.031-10.031C22.063 6.49 17.573 2 12.031 2zm0 18c-1.631 0-3.147-.469-4.416-1.275l-2.612.684.697-2.544c-.934-1.325-1.488-2.934-1.488-4.666 0-4.413 3.587-8 8-8s8 3.587 8 8-3.587 8-8 8z" />
                    </svg>
