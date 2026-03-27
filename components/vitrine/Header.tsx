@@ -21,17 +21,24 @@ export default function Header() {
         </Link>
 
         {/* Support & Admin */}
-        <div className="flex items-center gap-3">
-           <a 
-             href="https://jachete.ci/shop/" 
-             className="hidden sm:flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-5 py-2.5 rounded-2xl text-xs font-black hover:bg-brand-primary hover:text-white transition-all duration-300"
-           >
-              VOIR PLUS D'ARTICLES
-           </a>
-           <a href="tel:+225000000000" className="bg-slate-50 text-slate-600 px-4 py-2 rounded-full text-xs font-bold hover:bg-slate-100 transition-all">
-              Besoin d'aide ?
-           </a>
-        </div>
+         <div className="flex items-center gap-3">
+            <a 
+              href="https://jachete.ci/shop/" 
+              className="hidden lg:flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-5 py-2.5 rounded-2xl text-xs font-black hover:bg-brand-primary hover:text-white transition-all duration-300"
+            >
+               VOIR PLUS D'ARTICLES
+            </a>
+            <div className="flex flex-col items-end">
+               <a href="tel:+2250172571352" className="text-[10px] font-black text-slate-900 flex items-center gap-1.5 hover:text-brand-primary transition-colors">
+                  <span className="w-1 h-1 bg-brand-primary rounded-full animate-pulse"></span>
+                  +225 01 72 57 13 52
+               </a>
+               <a href="tel:+2250506844901" className="text-[10px] font-black text-slate-900 flex items-center gap-1.5 hover:text-brand-primary transition-colors">
+                  <span className="w-1 h-1 bg-brand-secondary rounded-full animate-pulse"></span>
+                  +225 05 06 84 49 01
+               </a>
+            </div>
+         </div>
       </div>
     </header>
   )
