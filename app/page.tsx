@@ -187,7 +187,7 @@ export default async function Home() {
                 <a href="https://jachete.ci/shop/" className="bg-brand-primary text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-brand-primary/90 transition-colors shadow-xl shadow-brand-primary/20">
                    Voir plus d'articles
                 </a>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
                    <a href="tel:+2250172571352" className="bg-white/5 text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-white/10 transition-colors flex items-center gap-3">
                       <span className="w-2 h-2 bg-brand-primary rounded-full animate-pulse"></span>
                       +225 01 72 57 13 52
