@@ -9,7 +9,6 @@ export default async function NouveauProduitPage() {
   const { data: categories } = await supabase
     .from('categories')
     .select('*')
-    .eq('actif', true)
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">

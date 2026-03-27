@@ -7,11 +7,12 @@ import { X, CheckCircle2, ShoppingBag } from 'lucide-react'
 
 interface Props {
   produit: any
+  selectedVariants?: Record<string, string>
   isOpen: boolean
   onClose: () => void
 }
 
-export default function OrderForm({ produit, isOpen, onClose }: Props) {
+export default function OrderForm({ produit, selectedVariants, isOpen, onClose }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isSuccess, setIsSuccess] = useState(false)
@@ -48,7 +49,8 @@ export default function OrderForm({ produit, isOpen, onClose }: Props) {
             ...formData,
             produit_id: produit.id,
             nom_produit: produit.nom,
-            montant_total: produit.prix * formData.quantite
+            montant_total: (produit.prix || 0) * formData.quantite,
+            variants: selectedVariants
           })
         })
         
@@ -57,7 +59,7 @@ export default function OrderForm({ produit, isOpen, onClose }: Props) {
         if (data.success) {
           // Pixel Event
           pixel.event('Purchase', {
-            value: produit.prix * formData.quantite,
+            value: (produit.prix || 0) * formData.quantite,
             currency: 'XOF',
             content_name: produit.nom,
             content_ids: [produit.id]
@@ -71,7 +73,7 @@ export default function OrderForm({ produit, isOpen, onClose }: Props) {
               eventId: data.eventId,
               produitId: produit.id,
               commandeId: data.commandeId,
-              montant: produit.prix * formData.quantite,
+              montant: (produit.prix || 0) * formData.quantite,
               clientTel: formData.client_tel
             })
           })
@@ -123,13 +125,19 @@ export default function OrderForm({ produit, isOpen, onClose }: Props) {
           <>
             {/* Header */}
             <div className="bg-slate-50 p-8 border-b border-slate-100 flex items-center gap-4">
-               <div className="w-16 h-16 relative rounded-2xl overflow-hidden bg-white border border-slate-200 shrink-0">
-                  <Image 
-                    src={produit.produit_photos?.[0]?.url || ''} 
-                    alt={produit.nom} 
-                    fill 
-                    className="object-cover" 
-                  />
+                <div className="w-16 h-16 relative rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                  {produit.produit_photos?.[0]?.url ? (
+                    <Image 
+                      src={produit.produit_photos[0].url} 
+                      alt={produit.nom} 
+                      fill 
+                      className="object-cover" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                       <ShoppingBag size={24} />
+                    </div>
+                  )}
                </div>
                <div>
                   <h2 className="text-lg font-black text-slate-900 leading-tight line-clamp-1">{produit.nom}</h2>

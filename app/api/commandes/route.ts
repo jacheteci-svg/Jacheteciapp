@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     quantite,
     montant_total,
     paiement_mode,
+    variants,
   } = body
 
   try {
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
         quantite,
         montant_total,
         paiement_mode,
+        variants: variants || {},
         statut: 'nouveau',
         event_id: eventId
       })
@@ -60,7 +62,11 @@ export async function POST(request: Request) {
     // 3. Notification WhatsApp au vendeur
     const vendeurTel = process.env.GREENAPI_VENDEUR_TEL
     if (vendeurTel) {
-      const message = `🛒 *NOUVELLE COMMANDE - JACHETE.CI*\n\n📦 Produit : ${nom_produit}\n👤 Client : ${client_nom}\n📱 Téléphone : ${client_tel}\n📍 Zone : ${client_quartier}\n💰 Montant : ${montant_total} FCFA\n💳 Paiement : ${paiement_mode}\n🕐 Heure : ${new Date().toLocaleString('fr-FR')}\n\n👉 Traiter : ${process.env.NEXT_PUBLIC_APP_URL}/admin/commandes/${commande.id}`
+      const variantText = variants && Object.keys(variants).length > 0 
+        ? `\n✨ Options : ${Object.entries(variants).map(([k, v]) => `${k}: ${v}`).join(', ')}`
+        : ''
+        
+      const message = `🛒 *NOUVELLE COMMANDE - JACHETE.CI*\n\n📦 Produit : ${nom_produit}${variantText}\n👤 Client : ${client_nom}\n📱 Téléphone : ${client_tel}\n📍 Zone : ${client_quartier}\n💰 Montant : ${montant_total} FCFA\n💳 Paiement : ${paiement_mode}\n🕐 Heure : ${new Date().toLocaleString('fr-FR')}\n\n👉 Traiter : ${process.env.NEXT_PUBLIC_APP_URL}/admin/commandes/${commande.id}`
       
       await sendWhatsAppMessage(vendeurTel, message)
     }

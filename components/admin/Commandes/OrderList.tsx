@@ -27,7 +27,7 @@ export default function OrderList({ orders }: { orders: any[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800">
-          {orders.map((o) => (
+          {(orders || []).map((o: any) => (
             <tr key={o.id} className="hover:bg-slate-800/30 transition-colors group">
               <td className="p-4">
                  <p className="text-white font-mono text-xs">{new Date(o.created_at).toLocaleDateString('fr-FR')}</p>

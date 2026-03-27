@@ -6,6 +6,7 @@ import WhatsAppButton from '@/components/vitrine/WhatsAppButton'
 import StockBadge from '@/components/vitrine/StockBadge'
 import Image from 'next/image'
 import Link from 'next/link'
+import SEO from '@/components/common/SEO'
 import { ShoppingBag, ArrowRight, Truck, ShieldCheck, CreditCard } from 'lucide-react'
 
 export default async function Home() {
@@ -24,6 +25,7 @@ export default async function Home() {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans pb-20">
+      <SEO />
       <Header />
 
       <main>
@@ -99,7 +101,7 @@ export default async function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-              {produits.map((produit) => {
+              {(produits || []).map((produit: any) => {
                 const mainPhoto = produit.produit_photos?.find((p: any) => p.est_principale) || produit.produit_photos?.[0]
                 const discount = produit.prix_barre ? Math.round(((produit.prix_barre - produit.prix) / produit.prix_barre) * 100) : 0
                 
@@ -212,8 +214,14 @@ export default async function Home() {
                   <p className="text-slate-400 text-sm font-medium">Yopougon toit Rouge Non loin de la Grande Mosquée apres le stade bae</p>
                   <a href="https://jachete.ci/politique-de-confidentialite/" target="_blank" className="text-brand-primary text-xs font-bold hover:underline">Politique de confidentialité</a>
                </div>
-               <div className="flex items-center gap-3 grayscale opacity-30">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 font-black text-xl shadow-lg">J</div>
+               <div className="flex items-center gap-3 grayscale opacity-40 hover:opacity-100 transition-opacity duration-500">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    width={32} 
+                    height={32} 
+                    className="object-contain"
+                  />
                   <span className="text-white font-black text-xl tracking-tighter">J'achète<span className="text-brand-secondary">.ci</span></span>
                </div>
                <div className="flex flex-col items-center gap-4">

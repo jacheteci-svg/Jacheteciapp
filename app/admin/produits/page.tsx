@@ -8,7 +8,7 @@ export default async function AdminProduitsPage() {
   
   const { data: produits } = await supabase
     .from('produits')
-    .select('*, categories(nom), produit_photos(url)')
+    .select('*, categories(name), produit_photos(url)')
     .order('created_at', { ascending: false })
 
   return (

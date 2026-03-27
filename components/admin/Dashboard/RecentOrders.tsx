@@ -32,7 +32,7 @@ export default async function RecentOrders() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
-            {orders.map((order) => (
+            {(orders || []).map((order: any) => (
               <tr key={order.id} className="hover:bg-slate-800/30 transition-colors group">
                 <td className="p-4">
                   <p className="font-bold text-white">{order.client_nom}</p>

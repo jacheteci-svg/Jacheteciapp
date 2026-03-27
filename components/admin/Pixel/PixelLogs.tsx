@@ -17,7 +17,7 @@ export default function PixelLogs({ logs }: { logs: any[] }) {
              </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
-             {logs.map((log) => (
+             {logs.map((log: any) => (
                 <tr key={log.id} className="hover:bg-slate-800/30">
                    <td className="p-4">
                       <p className="text-sm font-bold text-white">{log.event_name}</p>

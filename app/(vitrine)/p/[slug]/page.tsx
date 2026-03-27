@@ -8,6 +8,7 @@ import ProductCarousel from '@/components/vitrine/ProductCarousel'
 import StockBadge from '@/components/vitrine/StockBadge'
 import Header from '@/components/vitrine/Header'
 import WhatsAppButton from '@/components/vitrine/WhatsAppButton'
+import SEO from '@/components/common/SEO'
 import { ShieldCheck, Truck, RefreshCcw } from 'lucide-react'
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -16,7 +17,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   
   const { data: produit, error } = await supabase
     .from('produits')
-    .select('*, produit_photos(*), categories(*)')
+    .select('*, produit_photos(*), categories(*), product_variants(*)')
     .eq('slug', slug)
     .eq('actif', true)
     .single()
@@ -29,6 +30,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 pb-32 font-sans overflow-x-hidden">
+      <SEO 
+        title={produit.nom}
+        description={produit.description?.substring(0, 160)}
+        image={photos[0]?.url}
+        type="product"
+        price={produit.prix}
+      />
       <Header />
 
       <main className="max-w-4xl mx-auto md:py-12 px-0 md:px-4">

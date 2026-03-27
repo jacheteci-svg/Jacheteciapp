@@ -35,8 +35,12 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-[#0f172a] border-r border-slate-800 flex flex-col h-screen sticky top-0">
       <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white">
-          <Store size={18} />
+        <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            className="w-full h-full object-contain"
+          />
         </div>
         <span className="text-xl font-black text-white tracking-tighter">
           Admin<span className="text-brand-secondary">.CI</span>

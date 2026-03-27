@@ -27,7 +27,7 @@ export default function ProductList({ produits }: { produits: any[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800">
-          {produits.map((p) => {
+          {(produits || []).map((p: any) => {
             const mainPhoto = p.produit_photos?.find((ph: any) => ph.est_principale)?.url || p.produit_photos?.[0]?.url
             return (
               <tr key={p.id} className="hover:bg-slate-800/30 transition-colors group">
@@ -46,7 +46,7 @@ export default function ProductList({ produits }: { produits: any[] }) {
                 </td>
                 <td className="p-4 text-center">
                   <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    {p.categories?.nom || 'Sans catégorie'}
+                    {p.categories?.name || 'Sans catégorie'}
                   </span>
                 </td>
                 <td className="p-4 text-center">
