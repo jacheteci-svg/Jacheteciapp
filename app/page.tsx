@@ -183,21 +183,30 @@ export default async function Home() {
                <h2 className="text-white text-3xl md:text-5xl font-black tracking-tight">Besoin d'aide ?</h2>
                <p className="text-slate-400 font-medium">Notre service client est disponible 7j/7 pour vous accompagner.</p>
             </div>
-            <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
-               <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}`} className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
-                  <Image src="/whatsapp.svg" alt="WA" width={24} height={24} className="invert" />
-                  Contact WhatsApp
-               </a>
-               <a href="tel:+2250000000000" className="bg-white/10 text-white px-10 py-5 rounded-2xl font-black text-lg w-full md:w-auto hover:bg-white/20 transition-colors">
-                  Appelez-nous
-               </a>
-            </div>
+             <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
+                <a href="https://jachete.ci/shop/" className="bg-brand-primary text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-brand-primary/90 transition-colors shadow-xl shadow-brand-primary/20">
+                   Voir plus d'articles
+                </a>
+                <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}`} className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
+                   <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                      <path d="M12.031 6.172c-2.311 0-4.189 1.878-4.189 4.189 0 2.308 1.878 4.189 4.189 4.189 2.311 0 4.19-1.881 4.19-4.189S14.342 6.172 12.031 6.172zm0 7.378c-1.758 0-3.189-1.431-3.189-3.189s1.431-3.189 3.189-3.189 3.189 1.431 3.189 3.189-1.431 3.189-3.189 3.189zM12.031 2C6.49 2 2 6.49 2 12.03c0 1.731.438 3.356 1.206 4.778l-1.206 4.4 4.541-1.191a10.031 10.031 0 004.49 1.053c5.541 0 10.031-4.49 10.031-10.031C22.063 6.49 17.573 2 12.031 2zm0 18c-1.631 0-3.147-.469-4.416-1.275l-2.612.684.697-2.544c-.934-1.325-1.488-2.934-1.488-4.666 0-4.413 3.587-8 8-8s8 3.587 8 8-3.587 8-8 8z" />
+                   </svg>
+                   Contact WhatsApp
+                </a>
+             </div>
             <div className="pt-12 border-t border-white/5 flex flex-col items-center gap-6">
+               <div className="space-y-2">
+                  <p className="text-slate-400 text-sm font-medium">Yopougon toit Rouge Non loin de la Grande Mosquée apres le stade bae</p>
+                  <a href="https://jachete.ci/politique-de-confidentialite/" target="_blank" className="text-brand-primary text-xs font-bold hover:underline">Politique de confidentialité</a>
+               </div>
                <div className="flex items-center gap-3 grayscale opacity-30">
-                  <Image src="/logo.png" alt="Logo" width={40} height={40} />
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 font-black text-xl shadow-lg">J</div>
                   <span className="text-white font-black text-xl tracking-tighter">J'achète<span className="text-brand-secondary">.ci</span></span>
                </div>
-               <p className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.4em]">© 2024 J'ACHÈTE.CI - Tout droits réservés</p>
+               <div className="flex flex-col items-center gap-4">
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.4em]">© 2024 J'ACHÈTE.CI - Tout droits réservés</p>
+                  <Link href="/login" className="text-[10px] text-slate-700 hover:text-slate-500 transition-colors font-bold uppercase tracking-widest">Administration</Link>
+               </div>
             </div>
          </div>
       </footer>
