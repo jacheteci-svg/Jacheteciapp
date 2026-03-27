@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/slugify'
-import { Save, ImageIcon, X, Trash2 } from 'lucide-react'
+import { Save, ImageIcon, X, Trash2, Plus } from 'lucide-react'
 
 export default function ProductForm({ categories, initialData }: { categories: any[], initialData?: any }) {
   const router = useRouter()

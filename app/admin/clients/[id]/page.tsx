@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import ClientDetail from '@/components/admin/Clients/ClientDetail'
 
-export default async function ClientDetailPage({ params }: { params: { id: string } }) {
+export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = createClient()
   
   const { data: client } = await supabase
     .from('clients')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!client) notFound()

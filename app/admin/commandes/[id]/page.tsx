@@ -4,13 +4,14 @@ import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = createClient()
   
   const { data: order } = await supabase
     .from('commandes')
     .select('*, produits(*), zones_livraison(*), livreurs(*)')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!order) notFound()

@@ -8,13 +8,14 @@ import StockBadge from '@/components/vitrine/StockBadge'
 import Header from '@/components/vitrine/Header'
 import WhatsAppButton from '@/components/vitrine/WhatsAppButton'
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const supabase = createClient()
   
   const { data: produit, error } = await supabase
     .from('produits')
-    .select('*, produit_photos(*), categories(nom)')
-    .eq('slug', params.slug)
+    .select('*, produit_photos(*), categories(*)')
+    .eq('slug', slug)
     .eq('actif', true)
     .single()
 

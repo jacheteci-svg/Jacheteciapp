@@ -6,14 +6,15 @@ import Header from '@/components/vitrine/Header'
 export default async function ConfirmationPage({ 
   searchParams 
 }: { 
-  searchParams: { id: string } 
+  searchParams: Promise<{ id: string }> 
 }) {
+  const { id } = await searchParams
   const supabase = createClient()
   
-  const { data: commande } = await supabase
+  const { data: order } = await supabase
     .from('commandes')
-    .select('*, produits(nom)')
-    .eq('id', searchParams.id)
+    .select('*, produits(*)')
+    .eq('id', id)
     .single()
 
   return (
@@ -32,28 +33,28 @@ export default async function ConfirmationPage({
           </p>
         </div>
 
-        {commande && (
+        {order && (
           <div className="bg-slate-50 rounded-2xl p-6 text-left border border-slate-100 space-y-4 shadow-sm">
-            <h2 className="font-bold text-slate-400 uppercase text-xs tracking-widest border-b pb-2">Détails de votre commande</h2>
+            <h2 className="font-bold text-slate-400 uppercase text-xs tracking-widest border-b pb-2">Détails de votre order</h2>
             
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-500">Produit</span>
-              <span className="font-bold text-slate-800">{commande.produits?.nom}</span>
+              <span className="font-bold text-slate-800">{order.produits?.nom}</span>
             </div>
             
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-500">Quantité</span>
-              <span className="font-bold text-slate-800">x{commande.quantite}</span>
+              <span className="font-bold text-slate-800">x{order.quantite}</span>
             </div>
 
             <div className="flex justify-between items-center text-sm">
               <span className="text-slate-500">Mode de paiement</span>
-              <span className="font-bold text-slate-800 capitalize">{commande.paiement_mode.replace('_', ' ')}</span>
+              <span className="font-bold text-slate-800 capitalize">{order.paiement_mode.replace('_', ' ')}</span>
             </div>
 
             <div className="flex justify-between items-center pt-3 border-t border-slate-200">
               <span className="font-bold text-slate-800">TOTAL À PAYER</span>
-              <span className="font-black text-orange-600 text-xl">{formatPrix(commande.montant_total)}</span>
+              <span className="font-black text-orange-600 text-xl">{formatPrix(order.montant_total)}</span>
             </div>
           </div>
         )}
