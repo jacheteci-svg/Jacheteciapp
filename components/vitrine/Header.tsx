@@ -24,18 +24,18 @@ export default function Header() {
          <div className="flex items-center gap-6">
             <a 
               href="https://jachete.ci/shop/" 
-              className="hidden xl:flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-5 py-2.5 rounded-2xl text-xs font-black hover:bg-brand-primary hover:text-white transition-all duration-300"
+              className="hidden lg:flex items-center gap-2 bg-brand-primary/10 text-brand-primary px-5 py-2.5 rounded-2xl text-xs font-black hover:bg-brand-primary hover:text-white transition-all duration-300"
             >
                VOIR PLUS D'ARTICLES
             </a>
-            <div className="flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm">
-               <a href="tel:+2250172571352" className="text-sm md:text-base font-black text-slate-900 flex items-center gap-2 hover:text-brand-primary transition-colors">
-                  <span className="w-2 h-2 bg-brand-primary rounded-full animate-pulse"></span>
+            <div className="flex flex-row items-center gap-4 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-sm">
+               <a href="tel:+2250172571352" className="text-sm md:text-base font-black text-slate-900 flex items-center gap-2 hover:text-brand-primary transition-colors whitespace-nowrap">
+                  <span className="w-2.5 h-2.5 bg-brand-primary rounded-full animate-pulse"></span>
                   +225 01 72 57 13 52
                </a>
                <span className="h-4 w-px bg-slate-200"></span>
-               <a href="tel:+2250506844901" className="text-sm md:text-base font-black text-slate-900 flex items-center gap-2 hover:text-brand-primary transition-colors">
-                  <span className="w-2 h-2 bg-brand-secondary rounded-full animate-pulse"></span>
+               <a href="tel:+2250506844901" className="text-sm md:text-base font-black text-slate-900 flex items-center gap-2 hover:text-brand-primary transition-colors whitespace-nowrap">
+                  <span className="w-2.5 h-2.5 bg-brand-secondary rounded-full animate-pulse"></span>
                   +225 05 06 84 49 01
                </a>
             </div>

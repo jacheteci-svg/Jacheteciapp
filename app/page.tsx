@@ -187,7 +187,7 @@ export default async function Home() {
                 <a href="https://jachete.ci/shop/" className="bg-brand-primary text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-brand-primary/90 transition-colors shadow-xl shadow-brand-primary/20">
                    Voir plus d'articles
                 </a>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-row flex-wrap gap-4 justify-center">
                    <a href="tel:+2250172571352" className="bg-white/5 text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-white/10 transition-colors flex items-center gap-3">
                       <span className="w-2 h-2 bg-brand-primary rounded-full animate-pulse"></span>
                       +225 01 72 57 13 52
@@ -197,7 +197,7 @@ export default async function Home() {
                       +225 05 06 84 49 01
                    </a>
                 </div>
-                <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}`} className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
+                <a href="https://wa.me/2250506844901?text=Bonjour, je souhaite commander." className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                       <path d="M12.031 6.172c-2.311 0-4.189 1.878-4.189 4.189 0 2.308 1.878 4.189 4.189 4.189 2.311 0 4.19-1.881 4.19-4.189S14.342 6.172 12.031 6.172zm0 7.378c-1.758 0-3.189-1.431-3.189-3.189s1.431-3.189 3.189-3.189 3.189 1.431 3.189 3.189-1.431 3.189-3.189 3.189zM12.031 2C6.49 2 2 6.49 2 12.03c0 1.731.438 3.356 1.206 4.778l-1.206 4.4 4.541-1.191a10.031 10.031 0 004.49 1.053c5.541 0 10.031-4.49 10.031-10.031C22.063 6.49 17.573 2 12.031 2zm0 18c-1.631 0-3.147-.469-4.416-1.275l-2.612.684.697-2.544c-.934-1.325-1.488-2.934-1.488-4.666 0-4.413 3.587-8 8-8s8 3.587 8 8-3.587 8-8 8z" />
                    </svg>
@@ -214,9 +214,15 @@ export default async function Home() {
                   <span className="text-white font-black text-xl tracking-tighter">J'achète<span className="text-brand-secondary">.ci</span></span>
                </div>
                <div className="flex flex-col items-center gap-4">
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.4em]">
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.4em] flex items-center gap-1">
                     © 2024 J'ACHÈTE.CI - Tout droits réservés
-                    <Link href="/login" className="opacity-0 hover:opacity-10 transition-opacity ml-1">.</Link>
+                    <Link 
+                      href="/login" 
+                      className="text-slate-700 hover:text-orange-500 transition-colors opacity-20 hover:opacity-100 font-bold ml-1"
+                      title="Administration"
+                    >
+                      ADM
+                    </Link>
                   </p>
                </div>
             </div>
