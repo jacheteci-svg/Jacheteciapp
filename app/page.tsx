@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+export const dynamic = 'force-dynamic'
 import { formatPrix } from '@/lib/utils/formatPrix'
 import Header from '@/components/vitrine/Header'
 import WhatsAppButton from '@/components/vitrine/WhatsAppButton'

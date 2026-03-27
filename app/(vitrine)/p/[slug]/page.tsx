@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { formatPrix } from '@/lib/utils/formatPrix'
 import ProductActions from '@/components/vitrine/ProductActions'
