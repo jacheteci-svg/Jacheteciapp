@@ -19,8 +19,13 @@ export default function Header() {
            </div>
         </Link>
 
-        {/* Support Mobile */}
-        <div className="flex items-center gap-4">
+        {/* Support & Admin */}
+        <div className="flex items-center gap-2 md:gap-4">
+           <Link href="/login" className="text-slate-400 hover:text-brand-primary p-2 transition-colors" title="Administration">
+              <div className="w-8 h-8 rounded-full border border-slate-100 flex items-center justify-center">
+                <span className="text-[10px] font-bold">ADM</span>
+              </div>
+           </Link>
            <a href="tel:+225000000000" className="bg-slate-50 text-slate-600 px-4 py-2 rounded-full text-xs font-bold hover:bg-slate-100 transition-all hidden md:block">
               Besoin d'aide ?
            </a>
