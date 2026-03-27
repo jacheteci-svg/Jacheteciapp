@@ -43,7 +43,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                  <span className="text-brand-primary text-xs font-black uppercase tracking-widest bg-brand-primary/5 px-3 py-1 rounded-full">
-                   {produit.categories?.nom}
+                   {produit.categories?.name || 'Produit'}
                  </span>
                  <StockBadge quantity={produit.quantite} />
               </div>
@@ -114,8 +114,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Questions fréquentes</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="bg-slate-50 p-6 rounded-3xl">
-                    <h3 className="font-bold mb-2 text-slate-900">Combien de temps pour la livraison ?</h3>
-                    <p className="text-slate-600 font-medium text-sm">Nous livrons sous 24h à 48h partout à Abidjan.</p>
+                    <a 
+                       href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}?text=Bonjour, je souhaite avoir plus d'informations.`}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="block"
+                    >
+                       <h3 className="font-bold mb-2 text-slate-900">Combien de temps pour la livraison ?</h3>
+                       <p className="text-slate-600 font-medium text-sm">Nous livrons sous 24h à 48h partout à Abidjan.</p>
+                    </a>
                  </div>
                  <div className="bg-slate-50 p-6 rounded-3xl">
                     <h3 className="font-bold mb-2 text-slate-900">Puis-je payer à la livraison ?</h3>

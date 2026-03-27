@@ -132,7 +132,10 @@ export default async function Home() {
                       )}
                       
                       {/* Price Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-6">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
+                         <span className="text-brand-primary text-xs font-black uppercase tracking-widest bg-brand-primary/5 px-3 py-1 rounded-full self-start mb-2">
+                           {produit.categories?.name || 'Produit'}
+                         </span>
                          <span className="text-white font-black text-2xl tracking-tighter">Commander maintenant</span>
                       </div>
                     </div>
@@ -180,7 +183,7 @@ export default async function Home() {
                <p className="text-slate-400 font-medium">Notre service client est disponible 7j/7 pour vous accompagner.</p>
             </div>
             <div className="flex flex-col md:flex-row gap-6 justify-center items-center">
-               <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE}`} className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
+               <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}`} className="bg-green-600 text-white px-10 py-5 rounded-2xl font-black text-lg flex items-center gap-3 w-full md:w-auto hover:bg-green-500 transition-colors shadow-xl shadow-green-600/20">
                   <Image src="/whatsapp.svg" alt="WA" width={24} height={24} className="invert" />
                   Contact WhatsApp
                </a>

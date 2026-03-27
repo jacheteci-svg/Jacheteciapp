@@ -1,7 +1,7 @@
 export default function WhatsAppButton() {
   return (
     <a 
-      href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE}?text=Bonjour, je souhaite avoir plus d'informations.`}
+      href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}?text=Bonjour, je souhaite avoir plus d'informations.`}
       target="_blank"
       className="fixed bottom-6 right-6 z-[60] bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 active:scale-90 transition-transform hover:rotate-12"
     >
