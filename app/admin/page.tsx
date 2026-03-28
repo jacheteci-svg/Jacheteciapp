@@ -61,6 +61,30 @@ export default async function AdminDashboard() {
       .slice(0, 5) // Top 5
   }
 
+  // 4. Detailed Stats for Cards
+  const { data: allOrders } = await supabase
+    .from('commandes')
+    .select('montant_total, statut, created_at')
+
+  const now = new Date()
+  const todayStr = now.toLocaleDateString('fr-FR')
+  
+  const todayOrdersRaw = allOrders?.filter((o: any) => new Date(o.created_at).toLocaleDateString('fr-FR') === todayStr) || []
+  const deliveredOrders = allOrders?.filter((o: any) => o.statut === 'livré') || []
+  const attemptedOrders = allOrders?.filter((o: any) => ['livré', 'retour', 'annulé'].includes(o.statut)) || []
+  
+  const totalRevenue = deliveredOrders.reduce((sum: number, o: any) => sum + (o.montant_total || 0), 0)
+  const successRate = attemptedOrders.length > 0 
+    ? (deliveredOrders.length / attemptedOrders.length) * 100 
+    : 100
+
+  const statsData = {
+    revenue: totalRevenue,
+    todayOrders: todayOrdersRaw.length,
+    successRate: Math.round(successRate),
+    totalOrders: allOrders?.length || 0
+  }
+
   const chartData = {
     visitors: processByDay(visitorsRaw || []),
     orders: processByDay(ordersRaw || []),
@@ -83,7 +107,7 @@ export default async function AdminDashboard() {
       </header>
 
       {/* Stats Cards */}
-      <StatsCards />
+      <StatsCards data={statsData} />
 
       {/* Analytics Charts */}
       <div className="space-y-4">

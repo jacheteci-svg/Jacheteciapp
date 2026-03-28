@@ -3,12 +3,36 @@
 import { ShoppingCart, DollarSign, TrendingUp, Users } from 'lucide-react'
 import { formatPrix } from '@/lib/utils/formatPrix'
 
-export default function StatsCards() {
+export default function StatsCards({ data }: { data?: any }) {
   const stats = [
-    { label: "Ventes du jour", value: formatPrix(150000), icon: DollarSign, color: "bg-green-500", trend: "+12%" },
-    { label: "Commandes aujourd'hui", value: "12", icon: ShoppingCart, color: "bg-blue-500", trend: "+5%" },
-    { label: "Clients VIP", value: "24", icon: Users, color: "bg-purple-500", trend: "+2" },
-    { label: "Taux de conversion", value: "4.2%", icon: TrendingUp, color: "bg-orange-500", trend: "Stable" },
+    { 
+      label: "Chiffre d'Affaire", 
+      value: formatPrix(data?.revenue || 0), 
+      icon: DollarSign, 
+      color: "bg-green-500", 
+      trend: "Total livré" 
+    },
+    { 
+      label: "Commandes (Jour)", 
+      value: data?.todayOrders?.toString() || "0", 
+      icon: ShoppingCart, 
+      color: "bg-blue-500", 
+      trend: "Aujourd'hui" 
+    },
+    { 
+      label: "Taux de Succès", 
+      value: `${data?.successRate || 100}%`, 
+      icon: TrendingUp, 
+      color: "bg-orange-500", 
+      trend: "Logistique" 
+    },
+    { 
+      label: "Total Commandes", 
+      value: data?.totalOrders?.toString() || "0", 
+      icon: Users, 
+      color: "bg-purple-500", 
+      trend: "Historique" 
+    },
   ]
 
   return (
