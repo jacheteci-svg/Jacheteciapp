@@ -1,14 +1,17 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ProductList from '@/components/admin/Produits/ProductList'
 import ProductForm from '@/components/admin/Produits/ProductForm'
 import { Plus, Search, Package, Save, Loader2, X } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Modal from '@/components/ui/Modal'
 
-export default function AdminProduitsPage() {
+function AdminProduitsContent() {
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [produits, setProduits] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
@@ -19,8 +22,13 @@ export default function AdminProduitsPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null)
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchData().then(() => {
+      const editId = searchParams.get('edit')
+      if (editId) {
+        handleOpenEditById(editId)
+      }
+    })
+  }, [searchParams])
 
   const fetchData = async () => {
     setLoading(true)
@@ -33,9 +41,21 @@ export default function AdminProduitsPage() {
     setLoading(false)
   }
 
+  const handleOpenEditById = async (id: string) => {
+    const { data: product } = await supabase
+      .from('produits')
+      .select('*, produit_photos(*), product_variants(*)')
+      .eq('id', id)
+      .single()
+    
+    if (product) {
+      setEditingProduct(product)
+      setIsModalOpen(true)
+    }
+  }
+
   const handleEdit = (product: any) => {
-    setEditingProduct(product)
-    setIsModalOpen(true)
+    handleOpenEditById(product.id)
   }
 
   const handleDelete = async (id: string) => {
@@ -58,6 +78,10 @@ export default function AdminProduitsPage() {
 
   const handleFormSuccess = () => {
     setIsModalOpen(false)
+    // Clear search param if it exists
+    if (searchParams.get('edit')) {
+      router.push('/admin/produits')
+    }
     fetchData()
   }
 
@@ -107,7 +131,6 @@ export default function AdminProduitsPage() {
          />
       </div>
 
-      {/* Product Form Modal */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -123,5 +146,13 @@ export default function AdminProduitsPage() {
          </div>
       </Modal>
     </div>
+  )
+}
+
+export default function AdminProduitsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-white font-mono text-xs">Initialisation...</div>}>
+      <AdminProduitsContent />
+    </Suspense>
   )
 }
