@@ -63,7 +63,7 @@ export default function ProductList({ produits }: { produits: any[] }) {
                 </td>
                 <td className="p-4">
                   <div className="flex justify-end gap-2">
-                    <Link href={`/admin/produits/edit/${p.id}`} className="p-2 bg-slate-800 hover:bg-orange-500 text-slate-400 hover:text-white rounded-lg transition-all">
+                    <Link href={`/admin/produits/${p.id}/edit`} className="p-2 bg-slate-800 hover:bg-orange-500 text-slate-400 hover:text-white rounded-lg transition-all">
                       <Edit size={16} />
                     </Link>
                     <button className="p-2 bg-slate-800 hover:bg-red-500 text-slate-400 hover:text-white rounded-lg transition-all">
