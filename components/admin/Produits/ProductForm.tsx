@@ -11,9 +11,10 @@ import imageCompression from 'browser-image-compression'
 interface ProductFormProps {
   categories: any[]
   initialData?: any
+  onSuccess?: () => void
 }
 
-export default function ProductForm({ categories, initialData }: ProductFormProps) {
+export default function ProductForm({ categories, initialData, onSuccess }: ProductFormProps) {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
@@ -172,8 +173,12 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         }
       }
 
-      router.push('/admin/produits')
-      router.refresh()
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.push('/admin/produits')
+        router.refresh()
+      }
     } catch (err: any) {
       alert("Erreur: " + err.message)
     } finally {
