@@ -90,6 +90,26 @@ export function createClient() {
           filters.push(`${column}=eq.${value}`);
           return builder;
         },
+        gte: (column: string, value: any) => {
+          filters.push(`${column}=gte.${value}`);
+          return builder;
+        },
+        lte: (column: string, value: any) => {
+          filters.push(`${column}=lte.${value}`);
+          return builder;
+        },
+        gt: (column: string, value: any) => {
+          filters.push(`${column}=gt.${value}`);
+          return builder;
+        },
+        lt: (column: string, value: any) => {
+          filters.push(`${column}=lt.${value}`);
+          return builder;
+        },
+        ilike: (column: string, value: any) => {
+          filters.push(`${column}=ilike.${value}`);
+          return builder;
+        },
         order: (column: string, { ascending = true } = {}) => {
           order = `${column}.${ascending ? 'asc' : 'desc'}`;
           return builder;
