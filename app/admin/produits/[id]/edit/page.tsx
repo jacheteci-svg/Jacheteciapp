@@ -12,21 +12,40 @@ export default async function EditProduitPage({
   const supabase = createClient()
   const { id } = await params
 
-  // Simple test fetch
+  // Fetch product with simple select
   const { data: product } = await supabase
     .from('produits')
-    .select('*, categories(*), produit_photos(*), produit_variantes(*)')
+    .select('*')
     .eq('id', id)
     .single()
 
   if (!product) {
     return (
-      <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold text-white">Produit non trouvé</h1>
+      <div className="p-8 text-center text-white">
+        <h1 className="text-2xl font-bold">Produit non trouvé</h1>
         <p className="text-slate-400 mt-2">ID: {id}</p>
-        <Link href="/admin/produits" className="text-orange-500 mt-4 block">Retour</Link>
+        <Link href="/admin/produits" className="text-orange-500 mt-4 block underline">Retour à la liste</Link>
       </div>
     )
+  }
+
+  // Fetch photos separately
+  const { data: photos } = await supabase
+    .from('produit_photos')
+    .select('*')
+    .eq('produit_id', id)
+
+  // Fetch variants separately
+  const { data: variantes } = await supabase
+    .from('produit_variantes')
+    .select('*')
+    .eq('produit_id', id)
+
+  // Add relations to product object for the form
+  const productWithRelations = {
+    ...product,
+    produit_photos: photos || [],
+    produit_variantes: variantes || []
   }
 
   const { data: categories } = await supabase
@@ -42,13 +61,13 @@ export default async function EditProduitPage({
         </Link>
         <div>
           <h1 className="text-4xl font-black text-white">Modifier le Produit</h1>
-          <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Édition de : {product.name}</p>
+          <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Édition de : {product.nom}</p>
         </div>
       </header>
 
       <ProductForm 
         categories={categories || []} 
-        initialData={product} 
+        initialData={productWithRelations} 
       />
     </div>
   )
