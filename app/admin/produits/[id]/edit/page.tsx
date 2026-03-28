@@ -8,10 +8,10 @@ import { notFound } from 'next/navigation'
 export default async function EditProduitPage({
   params
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   const supabase = createClient()
-  const { id } = params
+  const { id } = await params
 
   // Fetch product with related categories, photos, and variants
   const { data: product, error } = await supabase
