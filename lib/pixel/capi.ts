@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { createClient } from '@/lib/supabase/server'
 
 export const hashData = (data: string) => {
   if (!data) return ''
@@ -21,12 +22,19 @@ export const sendCAPIEvent = async ({
   }
   customData?: any
 }) => {
-  const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
-  const accessToken = process.env.FACEBOOK_CAPI_TOKEN
+  const supabase = createClient()
+  
+  // Fetch config from DB
+  const { data: config } = await supabase
+    .from('pixel_config')
+    .select('*')
+    .single()
 
-  if (!pixelId || !accessToken) {
-    console.warn('Facebook Pixel ID or CAPI Token missing')
-    return { success: false, error: 'Config missing' }
+  const pixelId = config?.pixel_id || process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
+  const accessToken = config?.capi_token || process.env.FACEBOOK_CAPI_TOKEN
+
+  if (!pixelId || !accessToken || !config?.actif) {
+    return { success: false, error: 'Pixel ID, CAPI Token missing or inactive' }
   }
 
   const payload = {
@@ -43,6 +51,7 @@ export const sendCAPIEvent = async ({
           client_user_agent: userData.userAgent,
         },
         custom_data: customData,
+        test_event_code: config.mode_test ? config.test_event_code : undefined
       },
     ],
   }
@@ -60,9 +69,19 @@ export const sendCAPIEvent = async ({
     )
 
     const result = await response.json()
+    
+    // Log to DB
+    await supabase.from('pixel_logs').insert({
+      event_name: eventName,
+      event_id: eventId,
+      source: 'CAPI',
+      montant: customData.value || null,
+      statut: result.error ? 'erreur' : 'envoye',
+      erreur: result.error ? JSON.stringify(result.error) : null
+    })
+
     return { success: true, result }
-  } catch (error) {
-    console.error('Error sending CAPI event:', error)
-    return { success: false, error }
+  } catch (error: any) {
+    return { success: false, error: error.message }
   }
 }

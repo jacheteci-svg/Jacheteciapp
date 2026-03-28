@@ -36,16 +36,16 @@ export default async function EditProduitPage({
     .eq('produit_id', id)
 
   // Fetch variants separately
-  const { data: variantes } = await supabase
-    .from('produit_variantes')
+  const { data: variants } = await supabase
+    .from('product_variants')
     .select('*')
-    .eq('produit_id', id)
+    .eq('product_id', id)
 
   // Add relations to product object for the form
   const productWithRelations = {
     ...product,
     produit_photos: photos || [],
-    produit_variantes: variantes || []
+    product_variants: variants || []
   }
 
   const { data: categories } = await supabase

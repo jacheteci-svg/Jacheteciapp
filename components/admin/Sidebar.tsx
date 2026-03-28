@@ -33,7 +33,7 @@ const navItems = [
   { label: 'Paramètres', icon: Settings, href: '/admin/parametres' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ userName }: { userName?: string }) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -81,6 +81,17 @@ export default function Sidebar() {
           >
             <X size={24} />
           </button>
+        </div>
+
+        {/* User Profile Info */}
+        <div className="px-6 py-4 border-b border-slate-800/50 flex items-center gap-3">
+           <div className="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary font-black text-xs">
+              {userName?.charAt(0).toUpperCase() || 'A'}
+           </div>
+           <div className="flex-1 min-w-0">
+              <p className="text-xs font-black text-white truncate uppercase tracking-widest">{userName || 'Administrateur'}</p>
+              <p className="text-[10px] font-medium text-slate-500 truncate">Connecté</p>
+           </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">

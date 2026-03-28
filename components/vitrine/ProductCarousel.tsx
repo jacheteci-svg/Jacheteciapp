@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Zoom from 'react-medium-image-zoom'
+import { Maximize2 } from 'lucide-react'
 
 export default function ProductCarousel({ photos }: { photos: any[] }) {
   const [active, setActive] = useState(0)
@@ -15,11 +17,17 @@ export default function ProductCarousel({ photos }: { photos: any[] }) {
 
   return (
     <div className="relative group w-full aspect-[4/5] bg-slate-50 overflow-hidden">
-      <img 
-        src={photos[active].url} 
-        alt="produit" 
-        className="w-full h-full object-cover select-none transition-all duration-700 ease-out"
-      />
+      <Zoom>
+        <img 
+          src={photos[active].url} 
+          alt="produit" 
+          className="w-full h-full object-cover select-none transition-all duration-700 ease-out cursor-zoom-in"
+        />
+      </Zoom>
+
+      <div className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-md rounded-xl shadow-lg border border-slate-100 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+         <Maximize2 size={16} className="text-slate-600" />
+      </div>
       
       {photos.length > 1 && (
         <>

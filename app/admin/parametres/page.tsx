@@ -3,12 +3,16 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Settings, Phone, Image as ImageIcon, MessageSquare, Globe } from 'lucide-react'
+import { Save, Settings, Phone, Image as ImageIcon, MessageSquare, Globe, Upload, Loader2, Shield } from 'lucide-react'
+import imageCompression from 'browser-image-compression'
+import { useRef } from 'react'
 
 export default function ParametresPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [params, setParams] = useState<any>({
     nom_boutique: 'JACHETE.CI',
     logo_url: '',
@@ -34,6 +38,37 @@ export default function ParametresPage() {
       if (data) setParams(data)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const options = {
+        maxSizeMB: 0.1,
+        maxWidthOrHeight: 500,
+        useWebWorker: true
+      }
+      
+      const compressedFile = await imageCompression(file, options)
+      const fileName = `logo-${Date.now()}.png`
+      const filePath = `identity/${fileName}`
+
+      const { data, error } = await supabase.storage
+        .from('site')
+        .upload(filePath, compressedFile)
+
+      if (error) throw error
+      
+      const { data: { publicUrl } } = supabase.storage.from('site').getPublicUrl(filePath)
+      setParams({ ...params, logo_url: publicUrl })
+    } catch (err: any) {
+      alert("Erreur upload logo: " + err.message)
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -88,14 +123,32 @@ export default function ParametresPage() {
                   onChange={e => setParams({...params, nom_boutique: e.target.value})}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">URL du Logo</label>
-                <input 
-                  className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:border-orange-500 outline-none transition-all"
-                  value={params.logo_url}
-                  onChange={e => setParams({...params, logo_url: e.target.value})}
-                />
-              </div>
+               <div className="space-y-4">
+                  <div className="flex items-center gap-6">
+                     <div className="w-24 h-24 bg-[#0f172a] border border-slate-700 rounded-3xl flex items-center justify-center overflow-hidden relative group shrink-0">
+                        {params.logo_url ? <img src={params.logo_url} className="w-full h-full object-contain" /> : <ImageIcon size={32} className="text-slate-700" />}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                           <button 
+                             onClick={() => fileInputRef.current?.click()}
+                             className="text-white p-2"
+                           >
+                              {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+                           </button>
+                        </div>
+                     </div>
+                     <div className="flex-1 space-y-1">
+                        <p className="text-xs font-black text-white uppercase tracking-widest">Logo de la boutique</p>
+                        <p className="text-[10px] text-slate-500 font-medium">Recommandé : PNG transparent, 512x512px</p>
+                        <input 
+                           type="file" 
+                           ref={fileInputRef} 
+                           className="hidden" 
+                           accept="image/*"
+                           onChange={handleLogoUpload}
+                        />
+                     </div>
+                  </div>
+               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Facebook Pixel ID</label>
@@ -132,14 +185,20 @@ export default function ParametresPage() {
                       onChange={e => setParams({...params, whatsapp_principal: e.target.value})}
                     />
                  </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">WhatsApp Backup</label>
-                    <input 
-                      className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:border-orange-500 outline-none transition-all"
-                      value={params.whatsapp_backup}
-                      onChange={e => setParams({...params, whatsapp_backup: e.target.value})}
-                    />
-                 </div>
+                  <div className="space-y-2">
+                     <div className="flex items-center justify-between px-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">WhatsApp Backup</label>
+                        <span className="text-[8px] font-bold text-orange-400 uppercase tracking-widest flex items-center gap-1">
+                           <Shield size={10} /> Secours
+                        </span>
+                     </div>
+                     <input 
+                       className="w-full bg-[#0f172a] border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:border-orange-500 outline-none transition-all"
+                       placeholder="Numéro de secours (ex: 01...)"
+                       value={params.whatsapp_backup}
+                       onChange={e => setParams({...params, whatsapp_backup: e.target.value})}
+                     />
+                  </div>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Message de Bienvenue WhatsApp</label>

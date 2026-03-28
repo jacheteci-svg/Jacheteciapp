@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import PixelConfigForm from '@/components/admin/Pixel/PixelConfigForm'
 import PixelLogs from '@/components/admin/Pixel/PixelLogs'
-import { Activity, ShieldCheck } from 'lucide-react'
+import MarketingCharts from '@/components/admin/Marketing/MarketingCharts'
+import { Activity, ShieldCheck, BarChart3 } from 'lucide-react'
 
 export default async function AdminPixelPage() {
   const supabase = createClient()
@@ -23,6 +24,8 @@ export default async function AdminPixelPage() {
         <h1 className="text-4xl font-black text-white">Facebook Pixel & CAPI</h1>
         <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Optimisation marketing et conversion</p>
       </header>
+
+      <MarketingCharts logs={logs || []} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          <div className="lg:col-span-1">

@@ -26,6 +26,7 @@ export default function OrderDetail({ order, zones, livreurs }: { order: any, zo
 
   const getWhatsAppTemplate = (type: string) => {
     const templates: any = {
+      NOUVEAU: `Nous venons de recevoir votre commande et notre livreur va vous appeler pour vous livrer.`,
       CONFIRME: `Bonjour ${order.client_nom} ! Votre commande JACHETE.CI a été confirmée ✅ Livraison prévue dans votre zone (${order.client_quartier}) aujourd'hui ou demain. Le livreur vous appellera avant d'arriver. Merci de votre confiance ! 🙏`,
       EN_COURS: `Bonjour ${order.client_nom} ! Votre livreur est en route vers ${order.client_quartier} 🚚 Il vous appellera dans les prochaines minutes. Préparez ${formatPrix(order.montant_total)}. Merci !`,
       LIVRE: `Merci ${order.client_nom} pour votre commande JACHETE.CI ✅ Nous espérons que vous êtes satisfait(e) ! N'hésitez pas à nous faire un retour 😊`,
@@ -92,7 +93,7 @@ export default function OrderDetail({ order, zones, livreurs }: { order: any, zo
               WhatsApp Client
            </h3>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {['CONFIRME', 'EN_COURS', 'LIVRE'].map((type) => (
+              {['NOUVEAU', 'CONFIRME', 'EN_COURS', 'LIVRE'].map((type) => (
                 <a
                   key={type}
                   href={`https://wa.me/${order.client_tel.replace(/\s+/g, '')}?text=${getWhatsAppTemplate(type)}`}

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import * as pixel from '@/lib/pixel/browser'
+import * as track from '@/lib/pixel/tracking'
 import { X, CheckCircle2, ShoppingBag } from 'lucide-react'
 
 interface Props {
@@ -57,13 +57,8 @@ export default function OrderForm({ produit, selectedVariants, isOpen, onClose }
         const data = await res.json()
         
         if (data.success) {
-          // Pixel Event
-          pixel.event('Purchase', {
-            value: (produit.prix || 0) * formData.quantite,
-            currency: 'XOF',
-            content_name: produit.nom,
-            content_ids: [produit.id]
-          })
+          // Standardized Pixel Event
+          track.trackPurchase(produit, formData.quantite, data.commandeId)
 
           // CAPI Trigger
           await fetch('/api/pixel/capi', {

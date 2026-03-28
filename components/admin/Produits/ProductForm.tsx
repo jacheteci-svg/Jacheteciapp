@@ -5,7 +5,8 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/slugify'
-import { Save, ImageIcon, X, Trash2, Plus, Upload, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Save, ImageIcon, X, Trash2, Plus, Upload, Loader2, ChevronDown, ChevronUp, Zap } from 'lucide-react'
+import imageCompression from 'browser-image-compression'
 
 interface ProductFormProps {
   categories: any[]
@@ -44,15 +45,26 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
     setUploading(true)
     try {
+      const options = {
+        maxSizeMB: 0.1, // 100KB for very light images
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+        initialQuality: 0.8
+      }
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        const fileExt = file.name.split('.').pop()
+        
+        // Compress image
+        const compressedFile = await imageCompression(file, options)
+        
+        const fileExt = compressedFile.name.split('.').pop()
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
         const filePath = `products/${fileName}`
 
         const { data, error } = await supabase.storage
           .from('produits')
-          .upload(filePath, file)
+          .upload(filePath, compressedFile)
 
         if (error) throw error
         
@@ -61,7 +73,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         setPhotos(prev => [...prev, { url: publicUrl, est_principale: prev.length === 0, ordre: prev.length }])
       }
     } catch (err: any) {
-      alert("Erreur upload: " + err.message)
+      alert("Erreur upload/compression: " + err.message)
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -199,9 +211,9 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         </div>
         {/* Media */}
         <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-8 space-y-6">
-           <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2"><ImageIcon size={20} className="text-blue-500" /> Galerie Photos (Max 6)</div>
-              {uploading && <div className="flex items-center gap-2 text-blue-500 text-xs font-bold animate-pulse"><Loader2 className="animate-spin" size={16} /> Upload en cours...</div>}
+            <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2"><ImageIcon size={20} className="text-blue-500" /> Galerie Photos (Max 4)</div>
+              {uploading && <div className="flex items-center gap-2 text-blue-500 text-xs font-bold animate-pulse"><Loader2 className="animate-spin" size={16} /> Optimisation & Upload...</div>}
            </h2>
            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {photos.map((p, i) => (
@@ -243,7 +255,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                    </div>
                 </div>
               ))}
-              {photos.length < 6 && (
+              {photos.length < 4 && (
                 <button 
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -252,8 +264,8 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                    <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:bg-orange-500/20 group-hover:scale-110 transition-all">
                       <Upload size={24} className="group-hover:text-orange-500" />
                    </div>
-                   <span className="text-[10px] font-black uppercase mt-3 tracking-widest">Ajouter photo</span>
-                   <p className="text-[8px] text-slate-500 mt-1 uppercase">PNG, JPG jusqu'à 5MB</p>
+                   <span className="text-[10px] font-black uppercase mt-3 tracking-widest">Optimiser & Ajouter</span>
+                   <p className="text-[8px] text-slate-500 mt-1 uppercase">Max 4 images • Compression Auto <Zap size={8} className="inline text-orange-500" /></p>
                    <input 
                      type="file" 
                      ref={fileInputRef} 

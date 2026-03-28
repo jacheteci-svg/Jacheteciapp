@@ -1,10 +1,11 @@
 
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ShoppingBag, Star, Zap, Check } from 'lucide-react'
 import OrderForm from './OrderForm'
 import { formatPrix } from '@/lib/utils/formatPrix'
+import * as track from '@/lib/pixel/tracking'
 
 interface Props {
   produit: any
@@ -13,6 +14,11 @@ interface Props {
 export default function ProductActions({ produit }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({})
+
+  // Track ViewContent on mount
+  useEffect(() => {
+    track.trackViewContent(produit)
+  }, [produit])
 
   // Group variants by name (e.g., "Couleur", "Taille")
   const variantsByName = useMemo(() => {
@@ -98,7 +104,10 @@ export default function ProductActions({ produit }: Props) {
         {/* Main CTA Button */}
         <div className="space-y-4">
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setIsModalOpen(true)
+              track.trackAddToCart(produit)
+            }}
             className={`w-full py-6 rounded-[2rem] font-black text-2xl shadow-xl transition-all flex items-center justify-center gap-3 group ${
               isAllSelected || variantNames.length === 0
                 ? 'bg-brand-primary text-white shadow-brand-primary/25 hover:scale-[1.02] active:scale-95 animate-pulse-slow'
