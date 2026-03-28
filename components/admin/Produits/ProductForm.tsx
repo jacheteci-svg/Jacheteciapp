@@ -197,34 +197,63 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
             </div>
           </div>
         </div>
-
         {/* Media */}
         <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-8 space-y-6">
            <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2"><ImageIcon size={20} className="text-blue-500" /> Photos (Max 4)</div>
-              {uploading && <Loader2 className="animate-spin text-blue-500" size={20} />}
+              <div className="flex items-center gap-2"><ImageIcon size={20} className="text-blue-500" /> Galerie Photos (Max 6)</div>
+              {uploading && <div className="flex items-center gap-2 text-blue-500 text-xs font-bold animate-pulse"><Loader2 className="animate-spin" size={16} /> Upload en cours...</div>}
            </h2>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {photos.map((p, i) => (
-                <div key={i} className="aspect-square bg-[#0f172a] rounded-2xl overflow-hidden relative group border border-slate-800">
-                   <img src={p.url} className="w-full h-full object-cover" />
-                   <button 
-                     type="button"
-                     onClick={() => removePhoto(i)}
-                     className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-lg"
-                   >
-                     <X size={14} />
-                   </button>
-                   {i === 0 && <span className="absolute bottom-2 left-2 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md">Principale</span>}
+                <div key={i} className={`aspect-square bg-[#0f172a] rounded-2xl overflow-hidden relative group border-2 transition-all ${i === 0 ? 'border-orange-500 shadow-lg shadow-orange-500/10' : 'border-slate-800 hover:border-slate-600'}`}>
+                   <img src={p.url} className="w-full h-full object-cover" alt={`Photo ${i+1}`} />
+                   
+                   {/* Overlay Controls */}
+                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
+                      {i !== 0 && (
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newPhotos = [...photos];
+                            const [moved] = newPhotos.splice(i, 1);
+                            newPhotos.unshift(moved);
+                            setPhotos(newPhotos);
+                          }}
+                          className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all"
+                        >
+                          Mettre en principal
+                        </button>
+                      )}
+                      <button 
+                        type="button"
+                        onClick={() => removePhoto(i)}
+                        className="bg-red-500 text-white p-2 rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                   </div>
+
+                   {i === 0 && (
+                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
+                        <Save size={10} /> Principale
+                     </div>
+                   )}
+                   <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-black px-2 py-0.5 rounded-md backdrop-blur-md">
+                      #{i + 1}
+                   </div>
                 </div>
               ))}
-              {photos.length < 4 && (
-                <div 
+              {photos.length < 6 && (
+                <button 
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square bg-[#0f172a] border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:border-orange-500 hover:text-orange-500 transition-all cursor-pointer group"
+                  className="aspect-square bg-[#0f172a] border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:border-orange-500 hover:text-orange-500 hover:bg-orange-500/5 transition-all cursor-pointer group"
                 >
-                   <Upload size={24} className="group-hover:scale-110 transition-transform" />
-                   <span className="text-[10px] font-black uppercase mt-2">Ajouter</span>
+                   <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:bg-orange-500/20 group-hover:scale-110 transition-all">
+                      <Upload size={24} className="group-hover:text-orange-500" />
+                   </div>
+                   <span className="text-[10px] font-black uppercase mt-3 tracking-widest">Ajouter photo</span>
+                   <p className="text-[8px] text-slate-500 mt-1 uppercase">PNG, JPG jusqu'à 5MB</p>
                    <input 
                      type="file" 
                      ref={fileInputRef} 
@@ -233,9 +262,10 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                      accept="image/*" 
                      className="hidden" 
                    />
-                </div>
+                </button>
               )}
            </div>
+           <p className="text-[10px] text-slate-500 font-medium italic text-center">Tip: La première image sera affichée comme image principale du produit.</p>
         </div>
 
         {/* Variants */}

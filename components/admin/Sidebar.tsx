@@ -25,6 +25,7 @@ const navItems = [
   { label: 'Tableau de bord', icon: LayoutDashboard, href: '/admin' },
   { label: 'Commandes', icon: ShoppingCart, href: '/admin/commandes' },
   { label: 'Produits', icon: Package, href: '/admin/produits' },
+  { label: 'Catégories', icon: Tag, href: '/admin/categories' },
   { label: 'Clients CRM', icon: Users, href: '/admin/clients' },
   { label: 'Pixel & Marketing', icon: BarChart3, href: '/admin/pixel' },
   { label: 'Zones & Livraison', icon: Truck, href: '/admin/livraisons' },
