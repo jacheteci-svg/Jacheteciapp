@@ -9,9 +9,10 @@ export default async function AdminLayout({
 }) {
   const supabase = createClient()
   
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data, error } = await supabase.auth.getUser()
+  const user = data?.user
 
-  if (!user) {
+  if (!user || error) {
     redirect('/login')
   }
 
