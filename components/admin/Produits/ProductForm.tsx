@@ -140,7 +140,9 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
       }
 
       // 2. Handle Photos
-      await supabase.from('produit_photos').delete().eq('produit_id', productId)
+      const { error: delPhotoError } = await supabase.from('produit_photos').delete().eq('produit_id', productId)
+      if (delPhotoError) throw new Error("Erreur suppression photos: " + delPhotoError.message)
+
       if (photos.length > 0) {
         const photosToSave = photos.map((p, i) => ({
           produit_id: productId,
@@ -148,11 +150,14 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
           est_principale: i === 0,
           ordre: i
         }))
-        await supabase.from('produit_photos').insert(photosToSave)
+        const { error: insPhotoError } = await supabase.from('produit_photos').insert(photosToSave)
+        if (insPhotoError) throw new Error("Erreur insertion photos: " + insPhotoError.message)
       }
 
       // 3. Handle Variants
-      await supabase.from('product_variants').delete().eq('product_id', productId)
+      const { error: delVarError } = await supabase.from('product_variants').delete().eq('product_id', productId)
+      if (delVarError) throw new Error("Erreur suppression variantes: " + delVarError.message)
+
       if (variants.length > 0) {
         const variantsToSave = variants.filter(v => v.name && v.value).map(v => ({
           product_id: productId,
@@ -162,7 +167,8 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
           stock_quantity: parseInt(v.stock_quantity.toString())
         }))
         if (variantsToSave.length > 0) {
-          await supabase.from('product_variants').insert(variantsToSave)
+          const { error: insVarError } = await supabase.from('product_variants').insert(variantsToSave)
+          if (insVarError) throw new Error("Erreur insertion variantes: " + insVarError.message)
         }
       }
 

@@ -3,200 +3,248 @@
 
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2, Truck, Save, MapPin } from 'lucide-react'
+import { Plus, Trash2, Truck, Save, MapPin, Users, Phone, ShieldCheck } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 
 export default function LivraisonsPage() {
   const supabase = createClient()
+  const [activeTab, setActiveTab] = useState<'zones' | 'livreurs'>('zones')
   const [loading, setLoading] = useState(true)
+  
+  // Zones State
   const [zones, setZones] = useState<any[]>([])
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isZoneModalOpen, setIsZoneModalOpen] = useState(false)
   const [currentZone, setCurrentZone] = useState<any>(null)
 
+  // Livreurs State
+  const [livreurs, setLivreurs] = useState<any[]>([])
+  const [isLivreurModalOpen, setIsLivreurModalOpen] = useState(false)
+  const [currentLivreur, setCurrentLivreur] = useState<any>(null)
+
   useEffect(() => {
-    fetchZones()
+    fetchData()
   }, [])
 
-  const fetchZones = async () => {
+  const fetchData = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('zones_livraison')
-      .select('*')
-      .order('nom', { ascending: true })
+    const [zResp, lResp] = await Promise.all([
+      supabase.from('zones_livraison').select('*').order('nom'),
+      supabase.from('livreurs').select('*, zones_livraison(nom)').order('nom')
+    ])
     
-    if (data) setZones(data)
+    if (zResp.data) setZones(zResp.data)
+    if (lResp.data) setLivreurs(lResp.data)
     setLoading(false)
   }
 
-  const openAddModal = () => {
-    setCurrentZone({ nom: '', frais: 2000, delai_estime: '24h - 48h', actif: true })
-    setIsModalOpen(true)
-  }
-
-  const openEditModal = (zone: any) => {
-    setCurrentZone({ ...zone })
-    setIsModalOpen(true)
-  }
-
+  // --- ZONES LOGIC ---
   const handleSaveZone = async () => {
     const isNew = !currentZone.id || currentZone.id.toString().startsWith('new_')
-    const toSave = isNew ? { ...currentZone, id: undefined } : currentZone
     
-    const { error } = await supabase
-      .from('zones_livraison')
-      .upsert(toSave)
+    // Omit ID entirely for new records
+    const { id, ...dataToSave } = currentZone
+
+    const { error } = isNew 
+      ? await supabase.from('zones_livraison').insert(dataToSave)
+      : await supabase.from('zones_livraison').update(dataToSave).eq('id', id)
     
     if (!error) {
-      setIsModalOpen(false)
-      fetchZones()
+      setIsZoneModalOpen(false)
+      fetchData()
+    } else {
+      alert("Erreur: " + error.message)
     }
   }
 
   const deleteZone = async (id: any) => {
-    if (confirm('Voulez-vous vraiment supprimer cette zone ?')) {
+    if (confirm('Supprimer cette zone ?')) {
       const { error } = await supabase.from('zones_livraison').delete().eq('id', id)
-      if (!error) fetchZones()
+      if (!error) fetchData()
     }
   }
 
-  const toggleZoneStatus = async (zone: any) => {
-    const { error } = await supabase
-      .from('zones_livraison')
-      .update({ actif: !zone.actif })
-      .eq('id', zone.id)
-    if (!error) fetchZones()
+  // --- LIVREURS LOGIC ---
+  const openAddLivreur = () => {
+    setCurrentLivreur({ nom: '', telephone: '', zone_id: '', statut: 'disponible' })
+    setIsLivreurModalOpen(true)
   }
 
-  const quickAddIvoirie = async () => {
-    const ivoirieZones = [
-      { nom: 'Abidjan - Cocody', frais: 1500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Yopougon', frais: 2000, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Marcory', frais: 1500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Plateau', frais: 1500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Koumassi', frais: 2000, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Treichville', frais: 1500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Abobo', frais: 2500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Port-Bouët', frais: 2500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Adjamé', frais: 1500, delai_estime: '24h', actif: true },
-      { nom: 'Abidjan - Attécoubé', frais: 2000, delai_estime: '24h', actif: true },
-      { nom: 'Bingerville', frais: 2500, delai_estime: '24h - 48h', actif: true },
-      { nom: 'Grand-Bassam', frais: 3000, delai_estime: '24h - 48h', actif: true },
-      { nom: 'Anyama', frais: 3000, delai_estime: '48h', actif: true },
-      { nom: 'Songon', frais: 3500, delai_estime: '48h', actif: true },
-      { nom: 'Intérieur (Bouaké, SP, Yam)', frais: 5000, delai_estime: '48h - 72h', actif: true },
-    ]
-    const { error } = await supabase.from('zones_livraison').insert(ivoirieZones)
-    if (!error) fetchZones()
+  const handleSaveLivreur = async () => {
+    const isNew = !currentLivreur.id
+    const { id, zones_livraison, ...dataToSave } = currentLivreur
+
+    const { error } = isNew
+      ? await supabase.from('livreurs').insert(dataToSave)
+      : await supabase.from('livreurs').update(dataToSave).eq('id', id)
+    
+    if (!error) {
+      setIsLivreurModalOpen(false)
+      fetchData()
+    } else {
+      alert("Erreur: " + error.message)
+    }
+  }
+
+  const deleteLivreur = async (id: any) => {
+    if (confirm('Supprimer ce livreur ?')) {
+      const { error } = await supabase.from('livreurs').delete().eq('id', id)
+      if (!error) fetchData()
+    }
   }
 
   if (loading) return <div className="p-8 text-white font-mono text-xs">Chargement...</div>
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 min-h-screen pb-20 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-white flex items-center gap-3">
-             <Truck className="text-green-500" size={32} />
-             Zones de Livraison
+             <Truck className="text-green-500" size={32} /> Logistique
           </h1>
-          <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Gérez vos tarifs et délais par zone</p>
+          <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Gérez vos zones et votre équipe de livraison</p>
         </div>
-        <div className="flex flex-wrap gap-4">
-           <button onClick={quickAddIvoirie} className="bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary px-6 py-3 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95 border border-brand-primary/20">
-              <Plus size={20} /> Pack Zones Côte d'Ivoire
+        
+        <div className="flex bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700">
+           <button 
+             onClick={() => setActiveTab('zones')}
+             className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'zones' ? 'bg-brand-primary text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+           >
+             Zones
            </button>
-           <button onClick={openAddModal} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95">
-              <Plus size={20} /> Zone Perso
+           <button 
+             onClick={() => setActiveTab('livreurs')}
+             className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'livreurs' ? 'bg-brand-primary text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+           >
+             Equipe
            </button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-         {zones.map((z) => (
-           <div key={z.id} className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4 hover:border-green-500/50 transition-colors group relative overflow-hidden">
-              {!z.actif && <div className="absolute inset-0 bg-slate-900/40 backdrop-grayscale z-10 pointer-events-none" />}
-              
-              <div className="flex items-center justify-between relative z-20">
-                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${z.actif ? 'bg-green-500/10 text-green-500' : 'bg-slate-800 text-slate-500'}`}>
-                       <MapPin size={20} />
-                    </div>
-                    <div>
-                       <h3 className="text-lg font-black text-white">{z.nom}</h3>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{z.delai_estime}</p>
-                    </div>
-                 </div>
-                 <div className="flex items-center gap-1">
-                    <button onClick={() => openEditModal(z)} className="text-slate-400 hover:text-white hover:bg-slate-800 p-2 rounded-xl transition-all">
-                       <Save size={18} />
-                    </button>
-                    <button onClick={() => deleteZone(z.id)} className="text-red-500/50 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-xl transition-all">
-                       <Trash2 size={18} />
-                    </button>
-                 </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-slate-800/50 relative z-20">
-                 <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tarif Livraison</span>
-                    <span className="text-xl font-black text-white">{z.frais.toLocaleString()} <span className="text-[10px] text-slate-500">FCFA</span></span>
-                 </div>
-                 <button 
-                   onClick={() => toggleZoneStatus(z)}
-                   className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${z.actif ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}
-                 >
-                   {z.actif ? 'Active' : 'Désactivée'}
-                 </button>
-              </div>
+      {activeTab === 'zones' ? (
+        <section className="space-y-6">
+           <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                 <MapPin size={20} className="text-green-500" /> Secteurs de livraison
+              </h2>
+              <button 
+                onClick={() => { setCurrentZone({ nom: '', frais: 2000, delai_estime: '24h', actif: true }); setIsZoneModalOpen(true); }}
+                className="bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95"
+              >
+                <Plus size={18} /> Nouvelle Zone
+              </button>
            </div>
-         ))}
-      </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {zones.map(z => (
+                <div key={z.id} className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4 hover:border-green-500/50 transition-all group">
+                   <div className="flex items-center justify-between">
+                      <div>
+                         <h3 className="text-lg font-black text-white">{z.nom}</h3>
+                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{z.delai_estime}</p>
+                      </div>
+                      <div className="flex gap-1">
+                         <button onClick={() => { setCurrentZone(z); setIsZoneModalOpen(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"><Save size={16} /></button>
+                         <button onClick={() => deleteZone(z.id)} className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                      </div>
+                   </div>
+                   <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
+                      <span className="text-xl font-black text-white">{z.frais.toLocaleString()} <span className="text-xs text-slate-500">FCFA</span></span>
+                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${z.actif ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                        {z.actif ? 'Actif' : 'Off'}
+                      </span>
+                   </div>
+                </div>
+              ))}
+           </div>
+        </section>
+      ) : (
+        <section className="space-y-6">
+           <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                 <Users size={20} className="text-green-500" /> Livreurs & Partenaires
+              </h2>
+              <button 
+                onClick={openAddLivreur}
+                className="bg-brand-primary hover:bg-brand-primary/90 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95"
+              >
+                <Plus size={18} /> Ajouter un livreur
+              </button>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {livreurs.length === 0 && <div className="col-span-full py-20 text-center text-slate-500 font-medium bg-[#1e293b] border border-dashed border-slate-800 rounded-3xl">Aucun livreur enregistré</div>}
+              {livreurs.map(l => (
+                <div key={l.id} className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4 hover:border-green-500/50 transition-all group">
+                   <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                         <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-brand-primary">
+                            <Truck size={24} />
+                         </div>
+                         <div>
+                            <h3 className="text-lg font-black text-white">{l.nom}</h3>
+                            <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 uppercase tracking-widest"><Phone size={10} /> {l.telephone}</p>
+                         </div>
+                      </div>
+                      <div className="flex gap-1">
+                         <button onClick={() => { setCurrentLivreur(l); setIsLivreurModalOpen(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"><Save size={16} /></button>
+                         <button onClick={() => deleteLivreur(l.id)} className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                      </div>
+                   </div>
+                   <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                         <MapPin size={14} className="text-slate-500" />
+                         <span className="text-xs font-bold text-slate-300">{l.zones_livraison?.nom || 'Toutes zones'}</span>
+                      </div>
+                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${l.statut === 'disponible' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                        {l.statut}
+                      </span>
+                   </div>
+                </div>
+              ))}
+           </div>
+        </section>
+      )}
 
       {/* Zone Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={currentZone?.id ? "Modifier la zone" : "Nouvelle zone"}
-        maxWidth="max-w-md"
-      >
+      <Modal isOpen={isZoneModalOpen} onClose={() => setIsZoneModalOpen(false)} title={currentZone?.id ? "Modifier la zone" : "Nouvelle zone"}>
         <div className="space-y-6">
            <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nom de la zone</label>
-              <input 
-                className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all"
-                placeholder="Ex: Abidjan - Cocody"
-                value={currentZone?.nom || ''}
-                onChange={e => setCurrentZone({...currentZone, nom: e.target.value})}
-              />
+              <input className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all" value={currentZone?.nom || ''} onChange={e => setCurrentZone({...currentZone, nom: e.target.value})} />
            </div>
-
            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Frais (FCFA)</label>
-                 <input 
-                   type="number"
-                   className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all"
-                   value={currentZone?.frais || ''}
-                   onChange={e => setCurrentZone({...currentZone, frais: parseInt(e.target.value)})}
-                 />
+                 <input type="number" className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all" value={currentZone?.frais || 0} onChange={e => setCurrentZone({...currentZone, frais: parseInt(e.target.value)})} />
               </div>
               <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Délai</label>
-                 <input 
-                   className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all"
-                   placeholder="Ex: 24h"
-                   value={currentZone?.delai_estime || ''}
-                   onChange={e => setCurrentZone({...currentZone, delai_estime: e.target.value})}
-                 />
+                 <input className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all" value={currentZone?.delai_estime || ''} onChange={e => setCurrentZone({...currentZone, delai_estime: e.target.value})} />
               </div>
            </div>
+           <button onClick={handleSaveZone} className="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all flex items-center justify-center gap-2"><Save size={20} /> Enregistrer</button>
+        </div>
+      </Modal>
 
-           <button 
-             onClick={handleSaveZone}
-             className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-green-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-           >
-             <Save size={20} /> Confirmer la zone
-           </button>
+      {/* Livreur Modal */}
+      <Modal isOpen={isLivreurModalOpen} onClose={() => setIsLivreurModalOpen(false)} title={currentLivreur?.id ? "Modifier le livreur" : "Nouveau livreur"}>
+        <div className="space-y-6">
+           <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nom du livreur</label>
+              <input className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all" value={currentLivreur?.nom || ''} onChange={e => setCurrentLivreur({...currentLivreur, nom: e.target.value})} />
+           </div>
+           <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
+              <input className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all" value={currentLivreur?.telephone || ''} onChange={e => setCurrentLivreur({...currentLivreur, telephone: e.target.value})} />
+           </div>
+           <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Zone assignée</label>
+              <select className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-3 text-white font-black focus:border-green-500 outline-none transition-all appearance-none" value={currentLivreur?.zone_id || ''} onChange={e => setCurrentLivreur({...currentLivreur, zone_id: e.target.value || null})}>
+                 <option value="">Toutes zones</option>
+                 {zones.map(z => <option key={z.id} value={z.id}>{z.nom}</option>)}
+              </select>
+           </div>
+           <button onClick={handleSaveLivreur} className="w-full bg-green-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-green-700 transition-all flex items-center justify-center gap-2"><Save size={20} /> Enregistrer le profil</button>
         </div>
       </Modal>
     </div>
