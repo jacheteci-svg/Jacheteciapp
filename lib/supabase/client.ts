@@ -90,7 +90,7 @@ export function createClient() {
       },
       verifyEmail: async ({ email, otp }: { email: string; otp: string }) => {
         try {
-          const resp = await fetch(`${BASE_URL}/api/auth/verify`, {
+          const resp = await fetch(`${BASE_URL}/api/auth/email/verify`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export function createClient() {
       },
       resendVerificationEmail: async ({ email }: { email: string }) => {
         try {
-          const resp = await fetch(`${BASE_URL}/api/auth/resend-verification`, {
+          const resp = await fetch(`${BASE_URL}/api/auth/email/send-verification`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
