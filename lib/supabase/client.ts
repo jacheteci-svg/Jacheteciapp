@@ -87,6 +87,47 @@ export function createClient() {
           console.error("[getUser error]:", e);
           return { data: null, error: e };
         }
+      },
+      verifyEmail: async ({ email, otp }: { email: string; otp: string }) => {
+        try {
+          const resp = await fetch(`${BASE_URL}/api/auth/verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${ANON_KEY}`
+            },
+            body: JSON.stringify({ email, otp })
+          });
+          const data = await safeJson(resp);
+          if (!resp.ok) return { data: null, error: data };
+          
+          if (typeof window !== 'undefined' && data.accessToken) {
+            localStorage.setItem('insforge_token', data.accessToken);
+            document.cookie = `insforge_token=${data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
+          }
+          return { data, error: null };
+        } catch (e: any) {
+          console.error("[verifyEmail error]:", e);
+          return { data: null, error: e };
+        }
+      },
+      resendVerificationEmail: async ({ email }: { email: string }) => {
+        try {
+          const resp = await fetch(`${BASE_URL}/api/auth/resend-verification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${ANON_KEY}`
+            },
+            body: JSON.stringify({ email })
+          });
+          const data = await safeJson(resp);
+          if (!resp.ok) return { data: null, error: data };
+          return { data, error: null };
+        } catch (e: any) {
+          console.error("[resendVerification error]:", e);
+          return { data: null, error: e };
+        }
       }
     },
     from: (table: string) => {

@@ -12,9 +12,11 @@ function AdminSetupContent() {
   const searchParams = useSearchParams()
   const key = searchParams.get('key')
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
+  const [step, setStep] = useState<'form' | 'verify'>('form')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -38,79 +40,108 @@ function AdminSetupContent() {
     setDebug('')
 
     try {
-      console.log("--- START SETUP ---")
-      console.log("Target Email:", email)
-      
       const response = await (supabase.auth as any).signUp({
         email,
         password,
         name: fullName
       })
 
-      console.log("RAW AUTH RESPONSE:", response)
-      setDebug(JSON.stringify(response, null, 2))
-
       const signUpData = response.data
       const signUpError = response.error
 
-      // Handle shim-level error (HTTP != 2xx)
       if (signUpError) {
         const msg = typeof signUpError === 'string' ? signUpError : signUpError.message || JSON.stringify(signUpError)
         throw new Error(`Erreur API: ${msg}`)
       }
 
-      // Handle nested error (HTTP == 200 but error in JSON)
       const data = signUpData?.data || signUpData
-      const nestedError = signUpData?.error || data?.error
       
-      if (nestedError) {
-        throw new Error(`Erreur Interne: ${nestedError.message || JSON.stringify(nestedError)}`)
+      if (data?.requireEmailVerification) {
+        setStep('verify')
+        return
       }
 
-      // Find user in possible locations
       const user = data?.user || signUpData?.user
-      
       if (user) {
-        console.log("User detected:", user.id)
-        
-        // 2. Create Profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: email,
-            full_name: fullName,
-            role: 'SUPER_ADMIN',
-            permissions: {
-              staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
-            }
-          })
-
-        if (profileError) {
-          throw new Error(`Erreur Profil: ${profileError.message || JSON.stringify(profileError)}`)
-        }
-        
-        setSuccess(true)
-        setTimeout(() => { router.push('/login') }, 3000)
+        await createAdminProfile(user.id)
       } else {
-        // If we reach here, we have success but no user. 
-        // Is it because email verification is required?
-        if (data?.requireEmailVerification) {
-          setError("Vérification d'email requise. Un code ou un lien a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception (et vos spams) avant de vous connecter.")
-        } else {
-          throw new Error("Le compte a été créé, mais aucune donnée utilisateur n'a été reçue. Veuillez essayer de vous connecter.")
-        }
+        throw new Error("Compte créé mais utilisateur non reçu.")
       }
     } catch (err: any) {
-      console.error("Setup error catch:", err)
-      const msg = err.message || ""
-      if (msg.includes("ALREADY_EXISTS") || msg.toLowerCase().includes("exists")) {
-        setError("Ce compte existe déjà. Veuillez utiliser la page de connexion.")
-      } else {
-        setError(msg || "Une erreur inconnue est survenue.")
-      }
+      handleError(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (otp.length !== 6) {
+      setError("Veuillez saisir un code à 6 chiffres.")
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { data, error } = await (supabase.auth as any).verifyEmail({
+        email,
+        otp
+      })
+
+      if (error) throw error
+
+      if (data?.user) {
+        await createAdminProfile(data.user.id)
+      } else {
+        throw new Error("Vérification réussie mais utilisateur non reçu.")
+      }
+    } catch (err: any) {
+      handleError(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendCode = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const { error } = await (supabase.auth as any).resendVerificationEmail({ email })
+      if (error) throw error
+    } catch (err: any) {
+      handleError(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createAdminProfile = async (userId: string) => {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email: email,
+        full_name: fullName,
+        role: 'SUPER_ADMIN',
+        permissions: {
+          staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
+        }
+      })
+
+    if (profileError) throw profileError
+    setSuccess(true)
+    setTimeout(() => { router.push('/login') }, 3000)
+  }
+
+  const handleError = (err: any) => {
+    console.error("Setup error:", err)
+    const msg = err.message || ""
+    if (msg.includes("ALREADY_EXISTS") || msg.toLowerCase().includes("exists")) {
+      setError("Ce compte existe déjà. Veuillez utiliser la page de connexion.")
+    } else {
+      setError(msg || "Une erreur est survenue.")
     }
   }
 
@@ -142,16 +173,44 @@ function AdminSetupContent() {
           <div className="text-center space-y-4">
             <div className="bg-orange-500 text-white w-16 h-16 rounded-3xl flex items-center justify-center font-black mx-auto text-3xl shadow-2xl">J</div>
             <h1 className="text-3xl font-black text-white">Setup Admin V2</h1>
-            <p className="text-slate-400">Diagnostic de création de compte</p>
+            <p className="text-slate-400">
+              {step === 'form' ? 'Diagnostic de création de compte' : 'Vérification de votre email'}
+            </p>
           </div>
 
           <AnimatePresence mode="wait">
-            {!success ? (
-              <form onSubmit={handleCreateAdmin} className="space-y-6">
+            {success ? (
+              <motion.div 
+                key="success"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-10 space-y-6"
+              >
+                <CheckCircle2 className="text-green-500 w-20 h-20 mx-auto" />
+                <h2 className="text-2xl font-bold text-white">Succès !</h2>
+                <p className="text-slate-400">Compte créé et vérifié. Redirection...</p>
+              </motion.div>
+            ) : step === 'form' ? (
+              <motion.form 
+                key="form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onSubmit={handleCreateAdmin} 
+                className="space-y-6"
+              >
                 <div className="space-y-4">
-                  <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-orange-500/50" placeholder="Nom Complet" value={fullName} onChange={e => setFullName(e.target.value)} />
-                  <input required type="email" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-orange-500/50" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-                  <input required type="password" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white outline-none focus:border-orange-500/50" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} />
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                    <input required type="text" className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white outline-none focus:border-orange-500/50" placeholder="Nom Complet" value={fullName} onChange={e => setFullName(e.target.value)} />
+                  </div>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                    <input required type="email" className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white outline-none focus:border-orange-500/50" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+                    <input required type="password" className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white outline-none focus:border-orange-500/50" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} />
+                  </div>
                 </div>
 
                 {error && (
@@ -164,18 +223,53 @@ function AdminSetupContent() {
                 <button disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-5 rounded-2xl shadow-2xl shadow-orange-500/20 transition-all flex items-center justify-center gap-3">
                   {loading ? <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "TENTER LA CRÉATION"}
                 </button>
-              </form>
+              </motion.form>
             ) : (
-              <div className="text-center py-10 space-y-6">
-                <CheckCircle2 className="text-green-500 w-20 h-20 mx-auto" />
-                <h2 className="text-2xl font-bold text-white">Succès !</h2>
-                <p className="text-slate-400">Compte créé. Redirection...</p>
-              </div>
+              <motion.form 
+                key="verify"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onSubmit={handleVerifyOtp} 
+                className="space-y-6"
+              >
+                <div className="text-center space-y-4">
+                  <p className="text-slate-400 text-sm">Nous avons envoyé un code à 6 chiffres à <strong>{email}</strong></p>
+                  <input 
+                    required 
+                    type="text" 
+                    maxLength={6}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-6 text-white text-center text-4xl font-black tracking-[1rem] outline-none focus:border-orange-500/50" 
+                    placeholder="000000" 
+                    value={otp} 
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, ''))} 
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3">
+                    <AlertCircle className="text-red-400 shrink-0" size={18} />
+                    <p className="text-red-400 text-sm font-bold">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <button disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-5 rounded-2xl shadow-2xl shadow-orange-500/20 transition-all flex items-center justify-center gap-3 uppercase">
+                    {loading ? <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Vérifier le code"}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="w-full bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-4 rounded-2xl transition-all"
+                  >
+                    Renvoyer le code
+                  </button>
+                </div>
+              </motion.form>
             )}
           </AnimatePresence>
         </div>
       </motion.div>
-
     </div>
   )
 }
