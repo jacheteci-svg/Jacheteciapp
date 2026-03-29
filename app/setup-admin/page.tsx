@@ -86,22 +86,30 @@ function AdminSetupContent() {
     setError('')
 
     try {
+      console.log("[SetupAdmin] Tentative de vérification OTP:", { email, otp });
       const { data, error: verifyError } = await (supabase.auth as any).verifyEmail({
         email,
         otp
       })
 
-      if (verifyError) throw verifyError
+      if (verifyError) {
+        console.error("[SetupAdmin] Erreur de vérification OTP:", verifyError);
+        throw verifyError
+      }
+
+      console.log("[SetupAdmin] Vérification réussie:", data);
 
       // Get full user data if not in verify response
       let user = data?.user
       if (!user) {
+        console.log("[SetupAdmin] Utilisateur non présent dans la réponse, récupération via getUser...");
         const { data: userData, error: userError } = await (supabase.auth as any).getUser()
         if (userError) throw userError
         user = userData?.user
       }
 
       if (user) {
+        console.log("[SetupAdmin] Synchronisation des tables pour l'utilisateur:", user.id);
         await syncAdminTables(user.id)
       } else {
         throw new Error("Vérification réussie mais utilisateur non trouvé.")
