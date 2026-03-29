@@ -5,10 +5,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Mail, Lock, ArrowRight, ShieldCheck, AlertCircle, Sparkles, KeyRound } from 'lucide-react'
+import { User, Mail, Lock, ArrowRight, ShieldCheck, AlertCircle, Sparkles, KeyRound, Check } from 'lucide-react'
 
 export default function RegisterPage() {
-  const [step, setStep] = useState<'form' | 'verify'>('form')
+  const [step, setStep] = useState<'form' | 'verify' | 'success'>('form')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -25,6 +25,7 @@ export default function RegisterPage() {
 
     try {
       // 1. Sign Up
+      console.log("[Register] Tentative d'inscription:", email);
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -39,12 +40,14 @@ export default function RegisterPage() {
         return
       }
 
-      // If no verification required (auto-confirmed), proceed to sync and login
+      // If no verification required (auto-confirmed), proceed to sync and success
       if (signUpData?.user) {
         await syncProfile(signUpData.user.id)
+        setStep('success')
+        setTimeout(() => router.push('/login'), 3000)
+      } else {
+        throw new Error("Compte créé mais utilisateur non reçu.")
       }
-
-      await autoLogin()
     } catch (err: any) {
       setError(err.message || "Une erreur est survenue lors de l'inscription.")
     } finally {
@@ -63,19 +66,35 @@ export default function RegisterPage() {
     setError('')
 
     try {
+      console.log("[Register] Tentative de vérification OTP:", { email, otp });
       const { data, error: verifyError } = await (supabase.auth as any).verifyEmail({
         email,
         otp
       })
 
-      if (verifyError) throw verifyError
+      if (verifyError) {
+        console.error("[Register] Erreur de vérification OTP:", verifyError);
+        throw verifyError
+      }
 
-      if (data?.user) {
-        await syncProfile(data.user.id)
-        router.push('/admin')
-        router.refresh()
+      console.log("[Register] Vérification réussie:", data);
+
+      let user = data?.user
+      if (!user) {
+        const { data: userData, error: userError } = await (supabase.auth as any).getUser()
+        if (userError) throw userError
+        user = userData?.user
+      }
+
+      if (user) {
+        await syncProfile(user.id)
+        setStep('success')
+        setTimeout(() => {
+          router.push('/login')
+          router.refresh()
+        }, 3000)
       } else {
-        throw new Error("Vérification réussie mais utilisateur non trouvé.")
+        throw new Error("Vérification réussie mais session non initialisée.")
       }
     } catch (err: any) {
       setError(err.message || "Code invalide ou expiré.")
@@ -85,51 +104,47 @@ export default function RegisterPage() {
   }
 
   const syncProfile = async (userId: string) => {
-    // 1. Update/Create Profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: userId,
-        email: email.trim().toLowerCase(),
-        full_name: fullName,
-        role: 'SUPER_ADMIN',
-        permissions: {
-          staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
-        }
-      })
+    try {
+      console.log("[Register] Début synchronisation pour:", userId);
+      
+      // 1. Update/Create Profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          email: email.trim().toLowerCase(),
+          full_name: fullName,
+          role: 'SUPER_ADMIN',
+          permissions: {
+            staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
+          }
+        })
 
-    if (profileError) {
-      console.error("Profile sync error:", profileError)
-    }
+      if (profileError) {
+        console.error("[Register] Error profiles:", profileError);
+        throw new Error(`Table 'profiles' : ${profileError.message}`);
+      }
 
-    // 2. Update/Create utilisateurs_admin (used by dashboard filters)
-    const { error: adminError } = await supabase
-      .from('utilisateurs_admin')
-      .upsert({
-        id: userId,
-        nom: fullName,
-        email: email.trim().toLowerCase(),
-        role: 'SUPER_ADMIN',
-        actif: true
-      })
+      // 2. Update/Create utilisateurs_admin
+      const { error: adminError } = await supabase
+        .from('utilisateurs_admin')
+        .upsert({
+          id: userId,
+          nom: fullName,
+          email: email.trim().toLowerCase(),
+          role: 'SUPER_ADMIN',
+          actif: true
+        })
 
-    if (adminError) {
-      console.error("Admin table sync error:", adminError)
-    }
-  }
-
-  const autoLogin = async () => {
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-
-    if (signInError) {
-      setError("Compte créé, mais erreur de connexion automatique. Veuillez vous connecter.")
-      setTimeout(() => router.push('/login'), 2000)
-    } else {
-      router.push('/admin')
-      router.refresh()
+      if (adminError) {
+        console.error("[Register] Error utilisateurs_admin:", adminError);
+        throw new Error(`Table 'utilisateurs_admin' : ${adminError.message}`);
+      }
+      
+      console.log("[Register] Synchronisation terminée.");
+    } catch (e: any) {
+      console.error("[Register] Sync failed:", e);
+      throw e;
     }
   }
 
@@ -148,7 +163,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-[#030712] bg-mesh relative flex items-center justify-center p-4 overflow-hidden">
-      {/* Dynamic Background Elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#030712]/50 to-[#030712] z-0" />
       <div className="absolute top-[20%] left-[10%] w-[400px] h-[400px] bg-brand-primary/10 rounded-full blur-[120px] animate-pulse pointer-events-none" />
       <div className="absolute bottom-[20%] right-[10%] w-[300px] h-[300px] bg-brand-secondary/10 rounded-full blur-[100px] animate-pulse pointer-events-none" />
@@ -160,7 +174,6 @@ export default function RegisterPage() {
         className="w-full max-w-lg relative z-10"
       >
         <div className="glass border-white/5 p-8 md:p-12 rounded-[3rem] shadow-2xl space-y-10 overflow-hidden relative group">
-           {/* Decorative elements */}
            <div className="absolute -top-20 -right-20 w-40 h-40 bg-brand-primary/10 rounded-full blur-3xl group-hover:bg-brand-primary/20 transition-all duration-1000" />
            
            <div className="text-center space-y-4 relative z-10">
@@ -173,7 +186,7 @@ export default function RegisterPage() {
              </motion.div>
              <div className="space-y-1">
                <h1 className="text-4xl font-black text-white tracking-tighter italic">
-                 {step === 'form' ? 'Inscription' : 'Vérification'}
+                 {step === 'form' ? 'Inscription' : step === 'verify' ? 'Vérification' : 'Bienvenue'}
                </h1>
                <div className="flex items-center justify-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.4em]">
                   <Sparkles size={12} /> SYSTÈME ADMINISTRATEUR
@@ -256,7 +269,7 @@ export default function RegisterPage() {
                    </p>
                  </div>
                </motion.form>
-             ) : (
+             ) : step === 'verify' ? (
                <motion.form 
                  key="verify"
                  initial={{ opacity: 0, x: 20 }}
@@ -296,6 +309,31 @@ export default function RegisterPage() {
                    </button>
                  </div>
                </motion.form>
+             ) : (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center space-y-8 py-4 relative z-10"
+                >
+                  <div className="w-24 h-24 bg-green-500/20 rounded-[2rem] flex items-center justify-center mx-auto">
+                    <Check className="w-12 h-12 text-green-500" />
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="text-3xl font-black text-white tracking-tight">Compte Activé !</h3>
+                    <p className="text-slate-400 text-sm font-medium px-4">
+                      Votre accès administrateur est prêt.<br/>Redirection automatique vers la connexion...
+                    </p>
+                  </div>
+                  <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                    <motion.div 
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 3 }}
+                      className="h-full bg-green-500"
+                    />
+                  </div>
+                </motion.div>
              )}
            </AnimatePresence>
 

@@ -34,6 +34,16 @@ function AdminSetupContent() {
     }
   }, [key])
 
+  useEffect(() => {
+    if (showModal) {
+      const timer = setTimeout(() => {
+        router.push('/login')
+        router.refresh()
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [showModal, router])
+
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -99,7 +109,7 @@ function AdminSetupContent() {
 
       console.log("[SetupAdmin] Vérification réussie:", data);
 
-      // Get full user data if not in verify response
+      // IMPORTANT: If we are here, email is verified and we have an authenticated session
       let user = data?.user
       if (!user) {
         console.log("[SetupAdmin] Utilisateur non présent dans la réponse, récupération via getUser...");
@@ -111,8 +121,9 @@ function AdminSetupContent() {
       if (user) {
         console.log("[SetupAdmin] Synchronisation des tables pour l'utilisateur:", user.id);
         await syncAdminTables(user.id)
+        // Success! Modal is shown inside syncAdminTables
       } else {
-        throw new Error("Vérification réussie mais utilisateur non trouvé.")
+        throw new Error("Vérification réussie mais session non trouvée.")
       }
     } catch (err: any) {
       handleError(err)
@@ -136,6 +147,8 @@ function AdminSetupContent() {
 
   const syncAdminTables = async (userId: string) => {
     try {
+      console.log("[SetupAdmin] Début de la synchronisation pour:", userId);
+      
       // 1. Update/Create Profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -150,7 +163,8 @@ function AdminSetupContent() {
         })
 
       if (profileError) {
-        console.error("Profile sync error:", profileError)
+        console.error("[SetupAdmin] Erreur table 'profiles':", profileError);
+        throw new Error(`Table 'profiles' : ${profileError.message || JSON.stringify(profileError)}`);
       }
 
       // 2. Update/Create utilisateurs_admin (used by dashboard filters)
@@ -165,12 +179,16 @@ function AdminSetupContent() {
         })
 
       if (adminError) {
-        console.error("Admin table sync error:", adminError)
-        if (profileError) throw new Error("Erreur de synchronisation des tables administrateur.")
+        console.error("[SetupAdmin] Erreur table 'utilisateurs_admin':", adminError);
+        // Important but not always critical if profiles worked. 
+        // However, we want full perfection as requested.
+        throw new Error(`Table 'utilisateurs_admin' : ${adminError.message || JSON.stringify(adminError)}`);
       }
 
+      console.log("[SetupAdmin] Synchronisation terminée avec succès.");
       setShowModal(true)
-    } catch (e) {
+    } catch (e: any) {
+      console.error("[SetupAdmin] Échec de la synchronisation:", e);
       throw e
     }
   }
