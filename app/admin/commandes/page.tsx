@@ -3,7 +3,7 @@ import OrderList from '@/components/admin/Commandes/OrderList'
 import { Filter, Search } from 'lucide-react'
 
 export default async function AdminCommandesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: orders } = await supabase
     .from('commandes')

@@ -14,7 +14,7 @@ import Link from 'next/link'
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: produit, error } = await supabase
     .from('produits')

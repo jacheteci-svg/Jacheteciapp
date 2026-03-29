@@ -5,7 +5,7 @@ import MarketingCharts from '@/components/admin/Marketing/MarketingCharts'
 import { Activity, ShieldCheck, BarChart3 } from 'lucide-react'
 
 export default async function AdminPixelPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: config } = await supabase
     .from('pixel_config')

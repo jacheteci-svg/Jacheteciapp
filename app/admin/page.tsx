@@ -6,7 +6,7 @@ import { Plus, Package, BarChart3, Bell, ArrowRight, ShieldAlert, Truck } from '
 import Link from 'next/link'
 
 export default async function AdminDashboard() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Fetch data for the last 7 days
   const sevenDaysAgo = new Date()

@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: order } = await supabase
     .from('commandes')

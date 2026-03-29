@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import ClientList from '@/components/admin/Clients/ClientList'
 
 export default async function AdminClientsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: clients } = await supabase
     .from('clients')

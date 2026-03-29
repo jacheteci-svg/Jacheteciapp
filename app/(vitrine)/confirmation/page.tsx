@@ -10,7 +10,7 @@ export default async function ConfirmationPage({
   searchParams: Promise<{ id: string }> 
 }) {
   const { id } = await searchParams
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: order } = await supabase
     .from('commandes')

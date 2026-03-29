@@ -3,7 +3,7 @@ import { sendCAPIEvent } from '@/lib/pixel/capi'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const body = await request.json()
 
   const {

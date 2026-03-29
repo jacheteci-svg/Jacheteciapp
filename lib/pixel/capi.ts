@@ -22,7 +22,7 @@ export const sendCAPIEvent = async ({
   }
   customData?: any
 }) => {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   // Fetch config from DB
   const { data: config } = await supabase

@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function NouveauProduitPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: categories } = await supabase
     .from('categories')

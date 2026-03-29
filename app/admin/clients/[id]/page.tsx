@@ -6,7 +6,7 @@ import ClientDetail from '@/components/admin/Clients/ClientDetail'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = createClient()
+  const supabase = await createClient()
   
   const { data: client } = await supabase
     .from('clients')
