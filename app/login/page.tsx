@@ -23,12 +23,28 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError("Identifiants incorrects.")
+      setError(error.message || "Identifiants incorrects.")
       setLoading(false)
-    } else {
-      router.push('/admin')
-      router.refresh()
+      return
     }
+
+    if (data?.requireEmailVerification) {
+      setError("Votre adresse email n'est pas encore vérifiée. Veuillez consulter votre boîte de réception.")
+      setLoading(false)
+      return
+    }
+
+    if (!data?.accessToken) {
+      setError("Une erreur est survenue lors de la connexion.")
+      setLoading(false)
+      return
+    }
+
+    router.push('/admin')
+    router.refresh()
+    // We don't necessarily need to setLoading(false) here if we're navigating,
+    // but it's safer to have a timeout or just do it in case navigation is slow.
+    setTimeout(() => setLoading(false), 5000)
   }
 
   return (

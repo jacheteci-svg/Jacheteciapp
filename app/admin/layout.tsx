@@ -1,7 +1,3 @@
-'use client'
-
-import React from 'react'
-
 import Sidebar from '@/components/admin/Sidebar'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
