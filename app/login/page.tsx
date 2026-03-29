@@ -70,7 +70,9 @@ export default function LoginPage() {
         throw new Error("Vérification réussie mais session non reçue.")
       }
     } catch (err: any) {
-      setError(err.message || "Code invalide ou expiré.")
+      console.error("Login verify error:", err)
+      const msg = err.message || err.error || (typeof err === 'string' ? err : "Code invalide ou expiré.")
+      setError(msg)
     } finally {
       setLoading(false)
     }

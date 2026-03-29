@@ -136,12 +136,20 @@ function AdminSetupContent() {
   }
 
   const handleError = (err: any) => {
-    console.error("Setup error:", err)
-    const msg = err.message || ""
+    console.error("Setup error details:", err)
+    let msg = ""
+    if (typeof err === 'string') {
+      msg = err
+    } else if (err && typeof err === 'object') {
+      msg = err.message || err.error || JSON.stringify(err)
+    }
+
     if (msg.includes("ALREADY_EXISTS") || msg.toLowerCase().includes("exists")) {
       setError("Ce compte existe déjà. Veuillez utiliser la page de connexion.")
+    } else if (msg.includes("Invalid or expired")) {
+      setError("Le code est invalide ou a expiré. Veuillez vérifier votre email.")
     } else {
-      setError(msg || "Une erreur est survenue.")
+      setError(msg || "Une erreur est survenue lors de la vérification.")
     }
   }
 

@@ -29,13 +29,14 @@ export function createClient() {
       signUp: async ({ email, password, name, options }: any) => {
         try {
           if (!BASE_URL) throw new Error("BASE_URL is not configured.");
+          const cleanEmail = email.trim().toLowerCase();
           const resp = await fetch(`${BASE_URL}/api/auth/users`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${ANON_KEY}`
             },
-            body: JSON.stringify({ email, password, name })
+            body: JSON.stringify({ email: cleanEmail, password, name })
           });
           const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
@@ -47,13 +48,14 @@ export function createClient() {
       },
       signInWithPassword: async ({ email, password }: any) => {
         try {
+          const cleanEmail = email.trim().toLowerCase();
           const resp = await fetch(`${BASE_URL}/api/auth/sessions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${ANON_KEY}`
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email: cleanEmail, password })
           });
           const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
@@ -90,13 +92,14 @@ export function createClient() {
       },
       verifyEmail: async ({ email, otp }: { email: string; otp: string }) => {
         try {
+          const cleanEmail = email.trim().toLowerCase();
           const resp = await fetch(`${BASE_URL}/api/auth/email/verify`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${ANON_KEY}`
             },
-            body: JSON.stringify({ email, otp })
+            body: JSON.stringify({ email: cleanEmail, otp: otp.trim() })
           });
           const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
@@ -113,13 +116,14 @@ export function createClient() {
       },
       resendVerificationEmail: async ({ email }: { email: string }) => {
         try {
+          const cleanEmail = email.trim().toLowerCase();
           const resp = await fetch(`${BASE_URL}/api/auth/email/send-verification`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${ANON_KEY}`
             },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({ email: cleanEmail })
           });
           const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
