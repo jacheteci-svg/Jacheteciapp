@@ -103,7 +103,12 @@ function AdminSetupContent() {
       }
     } catch (err: any) {
       console.error("Setup error catch:", err)
-      setError(err.message || "Une erreur inconnue est survenue.")
+      const msg = err.message || ""
+      if (msg.includes("ALREADY_EXISTS") || msg.toLowerCase().includes("exists")) {
+        setError("Ce compte existe déjà. Veuillez utiliser la page de connexion.")
+      } else {
+        setError(msg || "Une erreur inconnue est survenue.")
+      }
     } finally {
       setLoading(false)
     }
@@ -171,23 +176,6 @@ function AdminSetupContent() {
         </div>
       </motion.div>
 
-      {debug && (
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-4xl mt-8 relative z-10"
-        >
-          <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] overflow-hidden">
-            <div className="flex items-center gap-2 mb-4 text-slate-400 font-mono text-xs uppercase tracking-widest">
-              <Terminal size={14} />
-              Debug Output
-            </div>
-            <pre className="text-green-400 font-mono text-xs overflow-auto max-h-[300px] p-4 bg-black/40 rounded-xl">
-              {debug}
-            </pre>
-          </div>
-        </motion.div>
-      )}
     </div>
   )
 }

@@ -2,10 +2,6 @@
 const BASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_BASE_URL || '').replace(/\/$/, '');
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!;
 
-if (typeof window !== 'undefined') {
-  console.log("[Supabase Client] BASE_URL:", BASE_URL);
-}
-
 export function createClient() {
   const getAuthHeader = () => {
     if (typeof window !== 'undefined') {
