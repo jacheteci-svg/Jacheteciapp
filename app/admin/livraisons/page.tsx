@@ -132,25 +132,28 @@ export default function LivraisonsPage() {
               >
                 <Plus size={18} /> Nouvelle Zone
               </button>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           </div>           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {zones.map(z => (
-                <div key={z.id} className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4 hover:border-green-500/50 transition-all group">
-                   <div className="flex items-center justify-between">
+                <div key={z.id} className="glass bg-slate-900/40 border-white/5 rounded-[2rem] p-8 space-y-6 hover:border-green-500/20 transition-all group relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 rounded-full blur-2xl" />
+                   
+                   <div className="flex items-center justify-between relative z-10">
                       <div>
-                         <h3 className="text-lg font-black text-white">{z.nom}</h3>
-                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{z.delai_estime}</p>
+                         <h3 className="text-xl font-black text-white tracking-tight">{z.nom}</h3>
+                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 italic">{z.delai_estime}</p>
                       </div>
-                      <div className="flex gap-1">
-                         <button onClick={() => { setCurrentZone(z); setIsZoneModalOpen(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"><Save size={16} /></button>
-                         <button onClick={() => deleteZone(z.id)} className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                      <div className="flex gap-2">
+                         <button onClick={() => { setCurrentZone(z); setIsZoneModalOpen(true); }} className="p-3 glass hover:bg-white/5 rounded-xl transition-all text-slate-400 hover:text-white border-white/5"><Save size={18} /></button>
+                         <button onClick={() => deleteZone(z.id)} className="p-3 glass hover:bg-red-500/5 rounded-xl transition-all text-red-500/50 hover:text-red-500 border-white/5"><Trash2 size={18} /></button>
                       </div>
                    </div>
-                   <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
-                      <span className="text-xl font-black text-white">{z.frais.toLocaleString()} <span className="text-xs text-slate-500">FCFA</span></span>
-                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${z.actif ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                        {z.actif ? 'Actif' : 'Off'}
+
+                   <div className="pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
+                      <div className="flex flex-col">
+                        <span className="text-2xl font-black text-white tracking-tighter">{z.frais.toLocaleString()} <span className="text-[10px] text-slate-500 uppercase">FCFA</span></span>
+                      </div>
+                      <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${z.actif ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                        {z.actif ? 'Service Actif' : 'Désactivé'}
                       </span>
                    </div>
                 </div>
@@ -172,32 +175,55 @@ export default function LivraisonsPage() {
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {livreurs.length === 0 && <div className="col-span-full py-20 text-center text-slate-500 font-medium bg-[#1e293b] border border-dashed border-slate-800 rounded-3xl">Aucun livreur enregistré</div>}
+              {livreurs.length === 0 && (
+                <div className="col-span-full py-20 text-center text-slate-500 font-medium bg-slate-900/40 border border-dashed border-white/10 rounded-[2.5rem]">
+                  Aucun livreur enregistré
+                </div>
+              )}
               {livreurs.map(l => (
-                <div key={l.id} className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4 hover:border-green-500/50 transition-all group">
-                   <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                         <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-brand-primary">
-                            <Truck size={24} />
+                <div key={l.id} className="glass bg-slate-900/40 border-white/5 rounded-[2rem] p-8 space-y-6 hover:border-brand-primary/20 transition-all group relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/5 rounded-full blur-2xl" />
+                   
+                   <div className="flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-5">
+                         <div className="w-16 h-16 rounded-[1.2rem] bg-brand-primary/10 flex items-center justify-center text-brand-primary border border-brand-primary/20 shadow-inner">
+                            <Truck size={28} strokeWidth={2.5} />
                          </div>
                          <div>
-                            <h3 className="text-lg font-black text-white">{l.nom}</h3>
-                            <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 uppercase tracking-widest"><Phone size={10} /> {l.telephone}</p>
+                            <h3 className="text-xl font-black text-white tracking-tight">{l.nom}</h3>
+                            <p className="text-[10px] font-black text-slate-500 flex items-center gap-2 uppercase tracking-widest mt-1">
+                               <Phone size={12} className="text-brand-primary" /> {l.telephone}
+                            </p>
                          </div>
                       </div>
-                      <div className="flex gap-1">
-                         <button onClick={() => { setCurrentLivreur(l); setIsLivreurModalOpen(true); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"><Save size={16} /></button>
-                         <button onClick={() => deleteLivreur(l.id)} className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                      <div className="flex gap-2">
+                         <button onClick={() => { setCurrentLivreur(l); setIsLivreurModalOpen(true); }} className="p-3 glass hover:bg-white/5 rounded-xl transition-all text-slate-400 hover:text-white border-white/5"><Save size={18} /></button>
+                         <button onClick={() => deleteLivreur(l.id)} className="p-3 glass hover:bg-red-500/5 rounded-xl transition-all text-red-500/50 hover:text-red-500 border-white/5"><Trash2 size={18} /></button>
                       </div>
                    </div>
-                   <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                         <MapPin size={14} className="text-slate-500" />
-                         <span className="text-xs font-bold text-slate-300">{l.zones_livraison?.nom || 'Toutes zones'}</span>
+
+                   <div className="pt-6 border-t border-white/5 flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-3">
+                         <div className="p-2 bg-slate-800/50 rounded-lg">
+                            <MapPin size={14} className="text-slate-500" />
+                         </div>
+                         <span className="text-[11px] font-black text-slate-300 uppercase tracking-tighter">{l.zones_livraison?.nom || 'Toutes zones'}</span>
                       </div>
-                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${l.statut === 'disponible' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                      
+                      <button 
+                        onClick={async () => {
+                           const newStatut = l.statut === 'disponible' ? 'occupé' : 'disponible'
+                           const { error } = await supabase.from('livreurs').update({ statut: newStatut }).eq('id', l.id)
+                           if (!error) fetchData()
+                        }}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+                          l.statut === 'disponible' 
+                            ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' 
+                            : 'bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20'
+                        }`}
+                      >
                         {l.statut}
-                      </span>
+                      </button>
                    </div>
                 </div>
               ))}

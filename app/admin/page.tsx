@@ -90,6 +90,15 @@ export default async function AdminDashboard() {
     locations: processLocations(locationsRaw || [])
   }
 
+  // 5. Critical Stock Query
+  const { data: criticalStock } = await supabase
+    .from('produits')
+    .select('id')
+    .lte('stock', 5)
+
+  // 6. Logistics Status (Orders for today that are not yet delivered/cancelled)
+  const logisticsOrders = todayOrdersRaw.filter((o: any) => !['livré', 'annulé', 'retour'].includes(o.statut))
+
   return (
     <div className="space-y-12 pb-20">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -149,25 +158,29 @@ export default async function AdminDashboard() {
               </div>
               
               <div className="space-y-4 relative z-10">
-                 <div className="flex items-start gap-4 p-5 glass bg-brand-secondary/5 border-brand-secondary/10 rounded-[1.5rem] group hover:border-brand-secondary/30 transition-all cursor-pointer">
+                 <Link href="/admin/produits" className="flex items-start gap-4 p-5 glass bg-brand-secondary/5 border-brand-secondary/10 rounded-[1.5rem] group hover:border-brand-secondary/30 transition-all cursor-pointer">
                     <div className="bg-brand-secondary/20 p-3 rounded-xl text-brand-secondary">
                        <ShieldAlert size={20} strokeWidth={2.5} />
                     </div>
                     <div>
                       <p className="font-black text-white text-sm uppercase tracking-tight">Stock Critique</p>
-                      <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">3 produits sont presque en rupture. Réapprovisionnement suggéré.</p>
+                      <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">
+                        {criticalStock?.length || 0} {criticalStock?.length === 1 ? 'produit est' : 'produits sont'} presque en rupture.
+                      </p>
                     </div>
-                 </div>
+                 </Link>
 
-                 <div className="flex items-start gap-4 p-5 glass bg-accent-blue/5 border-accent-blue/10 rounded-[1.5rem] group hover:border-accent-blue/30 transition-all cursor-pointer">
+                 <Link href="/admin/commandes" className="flex items-start gap-4 p-5 glass bg-accent-blue/5 border-accent-blue/10 rounded-[1.5rem] group hover:border-accent-blue/30 transition-all cursor-pointer">
                     <div className="bg-accent-blue/20 p-3 rounded-xl text-accent-blue">
                        <Truck size={20} strokeWidth={2.5} />
                     </div>
                     <div>
                       <p className="font-black text-white text-sm uppercase tracking-tight">Logistique</p>
-                      <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">8 livraisons sont prévues pour aujourd'hui.</p>
+                      <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">
+                        {logisticsOrders.length} {logisticsOrders.length === 1 ? 'livraison est prévue' : 'livraisons sont prévues'} pour aujourd'hui.
+                      </p>
                     </div>
-                 </div>
+                 </Link>
               </div>
 
               <Link href="/admin/parametres" className="block w-full text-center py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-slate-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-[0.2em]">
