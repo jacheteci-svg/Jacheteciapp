@@ -64,7 +64,7 @@ function AdminSetupContent() {
 
       const user = data?.user || signUpData?.user
       if (user) {
-        await createAdminProfile(user.id)
+        await syncAdminTables(user.id)
       } else {
         throw new Error("Compte créé mais utilisateur non reçu.")
       }
@@ -86,17 +86,25 @@ function AdminSetupContent() {
     setError('')
 
     try {
-      const { data, error } = await (supabase.auth as any).verifyEmail({
+      const { data, error: verifyError } = await (supabase.auth as any).verifyEmail({
         email,
         otp
       })
 
-      if (error) throw error
+      if (verifyError) throw verifyError
 
-      if (data?.user) {
-        await createAdminProfile(data.user.id)
+      // Get full user data if not in verify response
+      let user = data?.user
+      if (!user) {
+        const { data: userData, error: userError } = await (supabase.auth as any).getUser()
+        if (userError) throw userError
+        user = userData?.user
+      }
+
+      if (user) {
+        await syncAdminTables(user.id)
       } else {
-        throw new Error("Vérification réussie mais utilisateur non reçu.")
+        throw new Error("Vérification réussie mais utilisateur non trouvé.")
       }
     } catch (err: any) {
       handleError(err)
@@ -118,21 +126,45 @@ function AdminSetupContent() {
     }
   }
 
-  const createAdminProfile = async (userId: string) => {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: userId,
-        email: email,
-        full_name: fullName,
-        role: 'SUPER_ADMIN',
-        permissions: {
-          staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
-        }
-      })
+  const syncAdminTables = async (userId: string) => {
+    try {
+      // 1. Update/Create Profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          email: email.trim().toLowerCase(),
+          full_name: fullName,
+          role: 'SUPER_ADMIN',
+          permissions: {
+            staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
+          }
+        })
 
-    if (profileError) throw profileError
-    setShowModal(true)
+      if (profileError) {
+        console.error("Profile sync error:", profileError)
+      }
+
+      // 2. Update/Create utilisateurs_admin (used by dashboard filters)
+      const { error: adminError } = await supabase
+        .from('utilisateurs_admin')
+        .upsert({
+          id: userId,
+          nom: fullName,
+          email: email.trim().toLowerCase(),
+          role: 'SUPER_ADMIN',
+          actif: true
+        })
+
+      if (adminError) {
+        console.error("Admin table sync error:", adminError)
+        if (profileError) throw new Error("Erreur de synchronisation des tables administrateur.")
+      }
+
+      setShowModal(true)
+    } catch (e) {
+      throw e
+    }
   }
 
   const handleError = (err: any) => {
