@@ -71,8 +71,22 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error("Login verify error:", err)
-      const msg = err.message || err.error || (typeof err === 'string' ? err : "Code invalide ou expiré.")
-      setError(msg)
+      let msg = ""
+      if (typeof err === 'string') {
+        msg = err
+      } else if (err && typeof err === 'object') {
+        msg = err.message || err.error || (JSON.stringify(err) !== '{}' ? JSON.stringify(err) : String(err))
+      } else {
+        msg = String(err)
+      }
+
+      if (msg.includes("Invalid or expired") || msg.includes("INVALID_INPUT")) {
+        setError("Le code est invalide ou a expiré. Veuillez vérifier votre email.")
+      } else if (msg === "[object Object]" || msg === "{}" || !msg) {
+        setError("Une erreur technique est survenue. Veuillez réessayer.")
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }
