@@ -85,17 +85,36 @@ export default function RegisterPage() {
   }
 
   const syncProfile = async (userId: string) => {
+    // 1. Update/Create Profile
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
         id: userId,
         email: email.trim().toLowerCase(),
         full_name: fullName,
-        role: 'ADMIN'
+        role: 'SUPER_ADMIN',
+        permissions: {
+          staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
+        }
       })
 
     if (profileError) {
       console.error("Profile sync error:", profileError)
+    }
+
+    // 2. Update/Create utilisateurs_admin (used by dashboard filters)
+    const { error: adminError } = await supabase
+      .from('utilisateurs_admin')
+      .upsert({
+        id: userId,
+        nom: fullName,
+        email: email.trim().toLowerCase(),
+        role: 'SUPER_ADMIN',
+        actif: true
+      })
+
+    if (adminError) {
+      console.error("Admin table sync error:", adminError)
     }
   }
 
