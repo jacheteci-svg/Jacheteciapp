@@ -9,15 +9,33 @@ if (typeof window !== 'undefined') {
   console.log('[Auth] Initializing with:', { BASE_URL, hasKey: !!ANON_KEY });
 }
 
+let clientInstance: any = null;
+
 export const createClient = () => {
+  // Return existing instance in browser to maintain state
+  if (typeof window !== 'undefined' && clientInstance) {
+    return clientInstance;
+  }
+
+  // Get token from storage/cookies for persistence
+  let token = '';
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('insforge_token') || '';
+    if (!token) {
+      const match = document.cookie.match(/insforge_token=([^;]+)/);
+      if (match) token = match[1];
+    }
+  }
+
   const insforge = createInsForgeClient({
     baseUrl: BASE_URL,
     anonKey: ANON_KEY,
+    // @ts-ignore - Support passing initial token if SDK allows
+    accessToken: token,
     debug: process.env.NODE_ENV === 'development'
   });
 
-  // Re-map the official SDK to match the existing Supabase-like interface used throughout the app
-  return {
+  const client = {
     auth: {
       signUp: async (options: any) => {
         try {
@@ -67,13 +85,16 @@ export const createClient = () => {
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
+      },
+      onAuthStateChange: (callback: any) => {
+        // Simple mock: doesn't do much but prevents crashes
+        return { data: { subscription: { unsubscribe: () => {} } } };
       }
     },
     // Map .from() to the official database module
     from: (table: string) => {
       const tableRef = insforge.database.from(table);
       
-      // Helper to wrap standard SDK calls into { data, error }
       const wrap = async (promise: Promise<any>) => {
         try {
           const { data, error } = await promise;
@@ -113,14 +134,11 @@ export const createClient = () => {
         async then(resolve: any) {
           try {
             let query = (tableRef as any).select(this._columns === '*' ? undefined : this._columns);
-            
-            // Apply filters if possible (basic shim)
             for (const filter of this._filters) {
                if (filter.type === 'eq' && typeof query.eq === 'function') {
                  query = query.eq(filter.column, filter.value);
                }
             }
-
             const result = await wrap(query);
             if (this._single && result.data && Array.isArray(result.data)) {
               result.data = result.data[0] || null;
@@ -130,17 +148,14 @@ export const createClient = () => {
             resolve({ data: null, error: { message: e.message } });
           }
         },
-        // Upsert shim
         upsert: async (values: any) => {
           const records = Array.isArray(values) ? values : [values];
           const { data, error } = await tableRef.insert(records);
-          
           if (error) {
             const err = error as any;
             const isConflict = err.statusCode === 409 || err.status === 409 ||
                               String(err.message || '').toLowerCase().includes('duplicate') ||
                               String(err.message || '').toLowerCase().includes('already exists');
-
             if (isConflict) {
               const results = [];
               for (const record of records) {
@@ -163,10 +178,15 @@ export const createClient = () => {
         update: (id: string, values: any) => wrap((tableRef as any).update(id, values)),
         delete: (id: string) => wrap((tableRef as any).delete(id))
       };
-
       return chain;
     },
     rpc: (fn: string, args?: any) => insforge.database.rpc(fn, args),
     insforge
   } as any;
+
+  if (typeof window !== 'undefined') {
+    clientInstance = client;
+  }
+
+  return client;
 };
