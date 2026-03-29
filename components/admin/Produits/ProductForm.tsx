@@ -5,8 +5,10 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils/slugify'
-import { Save, ImageIcon, X, Trash2, Plus, Upload, Loader2, ChevronDown, ChevronUp, Zap } from 'lucide-react'
+import { Save, ImageIcon, X, Trash2, Plus, Upload, Loader2, Zap, LayoutGrid, Info, Tag, Layers } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils/cn'
 
 interface ProductFormProps {
   categories: any[]
@@ -47,7 +49,7 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
     setUploading(true)
     try {
       const options = {
-        maxSizeMB: 0.1, // 100KB for very light images
+        maxSizeMB: 0.2,
         maxWidthOrHeight: 1200,
         useWebWorker: true,
         initialQuality: 0.8
@@ -55,22 +57,15 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        
-        // Compress image
         const compressedFile = await imageCompression(file, options)
-        
         const fileExt = compressedFile.name.split('.').pop()
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
         const filePath = `products/${fileName}`
 
-        const { data, error } = await supabase.storage
-          .from('produits')
-          .upload(filePath, compressedFile)
-
+        const { error } = await supabase.storage.from('produits').upload(filePath, compressedFile)
         if (error) throw error
         
         const { data: { publicUrl } } = supabase.storage.from('produits').getPublicUrl(filePath)
-        
         setPhotos(prev => [...prev, { url: publicUrl, est_principale: prev.length === 0, ordre: prev.length }])
       }
     } catch (err: any) {
@@ -102,48 +97,34 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
     try {
       let productId = initialData?.id
       
-      // 1. Save Product
+      const productPayload = {
+        nom: formData.nom,
+        slug,
+        description: formData.description,
+        prix: parseInt(formData.prix as string),
+        prix_barre: formData.prix_barre ? parseInt(formData.prix_barre as string) : null,
+        categorie_id: formData.categorie_id,
+        quantite: parseInt(formData.quantite as string),
+        seuil_alerte: parseInt(formData.seuil_alerte as string),
+        actif: formData.actif,
+      }
+
       if (productId) {
         const { error } = await supabase
           .from('produits')
-          .update({
-            nom: formData.nom,
-            slug,
-            description: formData.description,
-            prix: parseInt(formData.prix as string),
-            prix_barre: formData.prix_barre ? parseInt(formData.prix_barre as string) : null,
-            categorie_id: formData.categorie_id,
-            quantite: parseInt(formData.quantite as string),
-            seuil_alerte: parseInt(formData.seuil_alerte as string),
-            actif: formData.actif,
-            updated_at: new Date().toISOString()
-          })
+          .update({ ...productPayload, updated_at: new Date().toISOString() })
           .eq('id', productId)
         if (error) throw error
       } else {
         const { data, error } = await supabase
           .from('produits')
-          .insert({
-            nom: formData.nom,
-            slug,
-            description: formData.description,
-            prix: parseInt(formData.prix as string),
-            prix_barre: formData.prix_barre ? parseInt(formData.prix_barre as string) : null,
-            categorie_id: formData.categorie_id,
-            quantite: parseInt(formData.quantite as string),
-            seuil_alerte: parseInt(formData.seuil_alerte as string),
-            actif: formData.actif
-          })
-          .select()
-          .single()
+          .insert(productPayload)
+          .select().single()
         if (error) throw error
         productId = data.id
       }
 
-      // 2. Handle Photos
-      const { error: delPhotoError } = await supabase.from('produit_photos').delete().eq('produit_id', productId)
-      if (delPhotoError) throw new Error("Erreur suppression photos: " + delPhotoError.message)
-
+      await supabase.from('produit_photos').delete().eq('produit_id', productId)
       if (photos.length > 0) {
         const photosToSave = photos.map((p, i) => ({
           produit_id: productId,
@@ -151,14 +132,10 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
           est_principale: i === 0,
           ordre: i
         }))
-        const { error: insPhotoError } = await supabase.from('produit_photos').insert(photosToSave)
-        if (insPhotoError) throw new Error("Erreur insertion photos: " + insPhotoError.message)
+        await supabase.from('produit_photos').insert(photosToSave)
       }
 
-      // 3. Handle Variants
-      const { error: delVarError } = await supabase.from('product_variants').delete().eq('product_id', productId)
-      if (delVarError) throw new Error("Erreur suppression variantes: " + delVarError.message)
-
+      await supabase.from('product_variants').delete().eq('product_id', productId)
       if (variants.length > 0) {
         const variantsToSave = variants.filter(v => v.name && v.value).map(v => ({
           product_id: productId,
@@ -168,14 +145,12 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
           stock_quantity: parseInt(v.stock_quantity.toString())
         }))
         if (variantsToSave.length > 0) {
-          const { error: insVarError } = await supabase.from('product_variants').insert(variantsToSave)
-          if (insVarError) throw new Error("Erreur insertion variantes: " + insVarError.message)
+          await supabase.from('product_variants').insert(variantsToSave)
         }
       }
 
-      if (onSuccess) {
-        onSuccess()
-      } else {
+      if (onSuccess) onSuccess()
+      else {
         router.push('/admin/produits')
         router.refresh()
       }
@@ -187,262 +162,316 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20 animate-in fade-in duration-500">
-      <div className="lg:col-span-2 space-y-8">
-        {/* Basic Info */}
-        <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-8 space-y-6">
-          <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4 flex items-center gap-2">
-             <Save size={20} className="text-orange-500" /> Informations de base
-          </h2>
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-5 gap-10 pb-20">
+      <div className="lg:col-span-3 space-y-10">
+        {/* Section: Basic Info */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass p-8 rounded-[2.5rem] border-white/5 space-y-8"
+        >
+          <div className="flex items-center gap-4 text-white border-b border-white/5 pb-6">
+             <div className="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
+                <Info size={22} />
+             </div>
+             <div>
+                <h3 className="text-xl font-black tracking-tight">Informations de base</h3>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Identité et description du produit</p>
+             </div>
+          </div>
           
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Nom du produit *</label>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Nom du produit *</label>
               <input 
                 required
-                className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 transition-all outline-none font-bold text-lg"
-                placeholder="Ex: Montre de luxe"
+                className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-white focus:border-brand-primary transition-all outline-none font-black text-lg placeholder:text-slate-800"
+                placeholder="EX: MONTRE DE LUXE"
                 value={formData.nom}
-                onChange={e => setFormData({...formData, nom: e.target.value})}
+                onChange={e => setFormData({...formData, nom: e.target.value.toUpperCase()})}
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Description *</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Description détaillée</label>
               <textarea 
                 required
-                rows={6}
-                className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 transition-all outline-none resize-none leading-relaxed"
-                placeholder="Décrivez votre produit en détail..."
+                rows={8}
+                className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-white focus:border-brand-primary transition-all outline-none resize-none leading-relaxed text-sm placeholder:text-slate-800"
+                placeholder="Brieve description du produit..."
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
               />
             </div>
           </div>
-        </div>
-        {/* Media */}
-        <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-8 space-y-6">
-            <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2"><ImageIcon size={20} className="text-blue-500" /> Galerie Photos (Max 4)</div>
-              {uploading && <div className="flex items-center gap-2 text-blue-500 text-xs font-bold animate-pulse"><Loader2 className="animate-spin" size={16} /> Optimisation & Upload...</div>}
-           </h2>
-           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {photos.map((p, i) => (
-                <div key={i} className={`aspect-square bg-[#0f172a] rounded-2xl overflow-hidden relative group border-2 transition-all ${i === 0 ? 'border-orange-500 shadow-lg shadow-orange-500/10' : 'border-slate-800 hover:border-slate-600'}`}>
-                   <img src={p.url} className="w-full h-full object-cover" alt={`Photo ${i+1}`} />
-                   
-                   {/* Overlay Controls */}
-                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
-                      {i !== 0 && (
+        </motion.div>
+
+        {/* Section: Media */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass p-8 rounded-[2.5rem] border-white/5 space-y-8"
+        >
+           <div className="flex items-center justify-between border-b border-white/5 pb-6">
+              <div className="flex items-center gap-4 text-white">
+                 <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center text-accent-blue">
+                    <ImageIcon size={22} />
+                 </div>
+                 <div>
+                    <h3 className="text-xl font-black tracking-tight">Galerie Media</h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Maximum 4 photos • Optimisation auto</p>
+                 </div>
+              </div>
+              {uploading && (
+                <div className="flex items-center gap-2 text-brand-primary text-[10px] font-black animate-pulse bg-brand-primary/10 px-3 py-1.5 rounded-full">
+                   <Loader2 className="animate-spin" size={14} /> LOADING...
+                </div>
+              )}
+           </div>
+
+           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <AnimatePresence mode="popLayout">
+                {photos.map((p, i) => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    key={p.url} 
+                    className={cn(
+                      "aspect-square bg-white/5 rounded-[1.5rem] overflow-hidden relative group border-2 transition-all shadow-xl shadow-black/20",
+                      i === 0 ? 'border-brand-primary/50' : 'border-white/5 hover:border-white/20'
+                    )}
+                  >
+                     <img src={p.url} className="w-full h-full object-cover" alt={`Photo ${i+1}`} />
+                     
+                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 backdrop-blur-[2px]">
+                        {i !== 0 && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const newPhotos = [...photos];
+                              const [moved] = newPhotos.splice(i, 1);
+                              newPhotos.unshift(moved);
+                              setPhotos(newPhotos);
+                            }}
+                            className="bg-brand-primary text-black px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tighter"
+                          >
+                            Principal
+                          </button>
+                        )}
                         <button 
                           type="button"
-                          onClick={() => {
-                            const newPhotos = [...photos];
-                            const [moved] = newPhotos.splice(i, 1);
-                            newPhotos.unshift(moved);
-                            setPhotos(newPhotos);
-                          }}
-                          className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all"
+                          onClick={() => removePhoto(i)}
+                          className="bg-brand-secondary text-white p-2.5 rounded-full hover:scale-110 active:scale-95 transition-all"
                         >
-                          Mettre en principal
+                          <Trash2 size={16} />
                         </button>
-                      )}
-                      <button 
-                        type="button"
-                        onClick={() => removePhoto(i)}
-                        className="bg-red-500 text-white p-2 rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                   </div>
-
-                   {i === 0 && (
-                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-md shadow-lg flex items-center gap-1">
-                        <Save size={10} /> Principale
                      </div>
-                   )}
-                   <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-black px-2 py-0.5 rounded-md backdrop-blur-md">
-                      #{i + 1}
-                   </div>
-                </div>
-              ))}
+
+                     {i === 0 && (
+                       <div className="absolute top-3 left-3 bg-brand-primary text-black text-[8px] font-black uppercase px-2 py-1 rounded-full shadow-lg">
+                          Main
+                       </div>
+                     )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              
               {photos.length < 4 && (
                 <button 
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square bg-[#0f172a] border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:border-orange-500 hover:text-orange-500 hover:bg-orange-500/5 transition-all cursor-pointer group"
+                  className="aspect-square bg-white/5 border-2 border-dashed border-white/10 rounded-[1.5rem] flex flex-col items-center justify-center text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-brand-primary/5 transition-all cursor-pointer group"
                 >
-                   <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center group-hover:bg-orange-500/20 group-hover:scale-110 transition-all">
-                      <Upload size={24} className="group-hover:text-orange-500" />
-                   </div>
-                   <span className="text-[10px] font-black uppercase mt-3 tracking-widest">Optimiser & Ajouter</span>
-                   <p className="text-[8px] text-slate-500 mt-1 uppercase">Max 4 images • Compression Auto <Zap size={8} className="inline text-orange-500" /></p>
-                   <input 
-                     type="file" 
-                     ref={fileInputRef} 
-                     onChange={handleFileChange} 
-                     multiple 
-                     accept="image/*" 
-                     className="hidden" 
-                   />
+                   <Upload size={32} className="group-hover:scale-110 transition-transform" />
+                   <span className="text-[10px] font-black uppercase mt-4 tracking-widest px-4 text-center">Ajouter Photo</span>
+                   <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*" className="hidden" />
                 </button>
               )}
            </div>
-           <p className="text-[10px] text-slate-500 font-medium italic text-center">Tip: La première image sera affichée comme image principale du produit.</p>
-        </div>
+        </motion.div>
 
-        {/* Variants */}
-        <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-8 space-y-6">
-           <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2"><Plus size={20} className="text-green-500" /> Variantes (Prix/Couleur)</div>
+        {/* Section: Variants */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="glass p-8 rounded-[2.5rem] border-white/5 space-y-8"
+        >
+           <div className="flex items-center justify-between border-b border-white/5 pb-6">
+              <div className="flex items-center gap-4 text-white">
+                 <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500">
+                    <Layers size={22} />
+                 </div>
+                 <div>
+                    <h3 className="text-xl font-black tracking-tight">Variantes</h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tailles, Couleurs, Options spécifiques</p>
+                 </div>
+              </div>
               <button 
                 type="button" 
                 onClick={addVariant}
-                className="bg-green-500/10 text-green-500 hover:bg-green-500 text-[10px] font-black uppercase px-4 py-2 rounded-xl transition-all hover:text-white"
+                className="bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 text-[10px] font-black uppercase px-6 py-2 rounded-full border border-white/5 transition-all"
               >
                 + Ajouter variante
               </button>
-           </h2>
+           </div>
            
            <div className="space-y-4">
-              {variants.length === 0 && <p className="text-center py-8 text-slate-500 font-medium italic text-sm">Aucune variante définie</p>}
+              {variants.length === 0 && <p className="text-center py-10 text-slate-800 font-black uppercase text-[10px] tracking-widest">Aucune variante configurée</p>}
               {variants.map((v, i) => (
-                <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-[#0f172a] p-4 rounded-2xl border border-slate-800 relative group animate-in slide-in-from-right-4 duration-300">
-                   <div className="space-y-1">
-                      <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1">Type (ex: Couleur)</label>
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  key={i} 
+                  className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-white/5 p-6 rounded-[1.8rem] border border-white/5 relative items-end group"
+                >
+                   <div className="space-y-2">
+                      <label className="text-[8px] font-black text-slate-600 uppercase tracking-widest ml-2 italic">Type</label>
                       <input 
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-bold focus:border-green-500 outline-none"
+                        className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2.5 text-white text-xs font-bold focus:border-brand-primary outline-none"
+                        placeholder="EX: COULEUR"
                         value={v.name}
-                        onChange={e => {
-                           const n = [...variants]; n[i].name = e.target.value; setVariants(n)
-                        }}
+                        onChange={e => { const n = [...variants]; n[i].name = e.target.value; setVariants(n) }}
                       />
                    </div>
-                   <div className="space-y-1">
-                      <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1">Valeur (ex: Rouge)</label>
+                   <div className="space-y-2">
+                      <label className="text-[8px] font-black text-slate-600 uppercase tracking-widest ml-2 italic">Valeur</label>
                       <input 
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-bold focus:border-green-500 outline-none"
+                        className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2.5 text-white text-xs font-bold focus:border-brand-primary outline-none"
+                        placeholder="EX: ROUGE"
                         value={v.value}
-                        onChange={e => {
-                           const n = [...variants]; n[i].value = e.target.value; setVariants(n)
-                        }}
+                        onChange={e => { const n = [...variants]; n[i].value = e.target.value; setVariants(n) }}
                       />
                    </div>
-                   <div className="space-y-1">
-                      <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1">Prix (Overide)</label>
+                   <div className="space-y-2">
+                      <label className="text-[8px] font-black text-slate-600 uppercase tracking-widest ml-2 italic">Surcharge Prix</label>
                       <input 
                         type="number"
-                        className="w-full bg-[#1e293b] border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-bold focus:border-green-500 outline-none"
+                        className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2.5 text-white text-xs font-black focus:border-brand-primary outline-none font-mono"
+                        placeholder="0"
                         value={v.price_override || ''}
-                        onChange={e => {
-                           const n = [...variants]; n[i].price_override = e.target.value ? parseInt(e.target.value) : null; setVariants(n)
-                        }}
+                        onChange={e => { const n = [...variants]; n[i].price_override = e.target.value ? parseInt(e.target.value) : null; setVariants(n) }}
                       />
                    </div>
-                   <div className="flex items-end gap-2">
-                       <div className="flex-1 space-y-1">
-                          <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest ml-1">Stock</label>
+                   <div className="flex items-center gap-3">
+                       <div className="flex-1 space-y-2">
+                          <label className="text-[8px] font-black text-slate-600 uppercase tracking-widest ml-2 italic">Inventaire</label>
                           <input 
                             type="number"
-                            className="w-full bg-[#1e293b] border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-bold focus:border-green-500 outline-none"
+                            className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-2.5 text-white text-xs font-black focus:border-brand-primary outline-none font-mono"
                             value={v.stock_quantity}
-                            onChange={e => {
-                               const n = [...variants]; n[i].stock_quantity = parseInt(e.target.value); setVariants(n)
-                            }}
+                            onChange={e => { const n = [...variants]; n[i].stock_quantity = parseInt(e.target.value); setVariants(n) }}
                           />
                        </div>
-                       <button onClick={() => removeVariant(i)} className="bg-red-500/10 text-red-500 p-2.5 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                       <button onClick={() => removeVariant(i)} className="bg-brand-secondary/10 text-brand-secondary p-3 rounded-xl hover:bg-brand-secondary hover:text-white transition-all">
                           <Trash2 size={16} />
                        </button>
                    </div>
-                </div>
+                </motion.div>
               ))}
            </div>
-        </div>
+        </motion.div>
       </div>
 
-      <div className="space-y-8">
-        {/* Pricing & Stock */}
-        <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-8 space-y-6 sticky top-8">
-          <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-4">Prix & Stock Global</h2>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Prix de vente (FCFA) *</label>
+      <div className="lg:col-span-2 space-y-10">
+        {/* Pricing & Control */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass p-10 rounded-[2.5rem] border-white/5 space-y-10 lg:sticky lg:top-8"
+        >
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2 flex items-center gap-2">
+                 <Tag size={12} className="text-brand-primary" /> Prix Standard (FCFA)
+              </label>
               <input 
                 required
                 type="number"
-                className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 transition-all outline-none font-black text-2xl text-orange-500"
+                className="w-full bg-brand-primary/5 border-2 border-brand-primary/10 rounded-[1.5rem] px-8 py-6 text-white focus:border-brand-primary transition-all outline-none font-black text-4xl text-center tabular-nums shadow-inner"
                 value={formData.prix}
                 onChange={e => setFormData({...formData, prix: e.target.value})}
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Prix barré (Optionnel)</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2">Prix barré / Promotion</label>
               <input 
                 type="number"
-                className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-slate-500 line-through focus:border-orange-500 transition-all outline-none font-bold italic"
+                className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-slate-600 line-through focus:border-brand-primary transition-all outline-none font-bold italic text-center text-xl placeholder:text-slate-800"
+                placeholder="PROMO"
                 value={formData.prix_barre}
                 onChange={e => setFormData({...formData, prix_barre: e.target.value})}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Quantité Totale</label>
+            <div className="grid grid-cols-2 gap-6 p-4 bg-white/5 rounded-[2rem] border border-white/5">
+               <div className="space-y-3">
+                  <label className="text-[8px] font-black text-slate-600 uppercase tracking-widest text-center block">Stock Global</label>
                   <input 
                     type="number"
-                    className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 transition-all outline-none font-mono"
+                    className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-white text-center font-black focus:border-brand-primary outline-none"
                     value={formData.quantite}
                     onChange={e => setFormData({...formData, quantite: e.target.value})}
                   />
                </div>
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Seuil Alerte</label>
+               <div className="space-y-3">
+                  <label className="text-[8px] font-black text-slate-600 uppercase tracking-widest text-center block">Seuil Alerte</label>
                   <input 
                     type="number"
-                    className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 transition-all outline-none font-mono"
+                    className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-brand-secondary text-center font-black focus:border-brand-primary outline-none"
                     value={formData.seuil_alerte}
                     onChange={e => setFormData({...formData, seuil_alerte: e.target.value})}
                   />
                </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Catégorie *</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2 flex items-center gap-2">
+                 <LayoutGrid size={12} className="text-accent-blue" /> Catégorie
+              </label>
               <select 
                 required
-                className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 transition-all outline-none font-bold"
+                className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-white focus:border-brand-primary transition-all outline-none font-black uppercase text-xs tracking-widest appearance-none cursor-pointer"
                 value={formData.categorie_id}
                 onChange={e => setFormData({...formData, categorie_id: e.target.value})}
               >
-                <option value="">Sélectionner...</option>
-                {(categories || []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="" className="bg-[#030712]">SÉLECTIONNER...</option>
+                {categories.map((c: any) => <option key={c.id} value={c.id} className="bg-[#030712]">{c.name.toUpperCase()}</option>)}
               </select>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-[#0f172a] rounded-2xl border border-slate-800">
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Produit actif</span>
+            <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Statut du catalogue</span>
                <button 
                  type="button"
                  onClick={() => setFormData({...formData, actif: !formData.actif})}
-                 className={`w-12 h-6 rounded-full transition-all relative ${formData.actif ? 'bg-orange-500' : 'bg-slate-700'}`}
+                 className={cn(
+                   "w-14 h-7 rounded-full transition-all relative",
+                   formData.actif ? 'bg-brand-primary shadow-lg shadow-brand-primary/20' : 'bg-slate-800'
+                 )}
                >
-                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.actif ? 'left-7' : 'left-1'}`} />
+                 <div className={cn(
+                   "absolute top-1 w-5 h-5 rounded-full bg-black transition-all",
+                   formData.actif ? 'left-8' : 'left-1'
+                 )} />
                </button>
             </div>
 
             <button 
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-orange-500/20 active:scale-95 transition-all text-xl flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
+              className="w-full bg-white text-black font-black py-6 rounded-2xl shadow-xl shadow-white/5 active:scale-[0.98] transition-all text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 disabled:opacity-50"
             >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
-              {loading ? "ENREGISTREMENT..." : "SAUVEGARDER"}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+              {loading ? "Synchronisation..." : "VALIDER & PUBLIER"}
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </form>
   )
 }
+

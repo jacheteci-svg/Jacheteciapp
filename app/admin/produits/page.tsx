@@ -4,9 +4,10 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ProductList from '@/components/admin/Produits/ProductList'
 import ProductForm from '@/components/admin/Produits/ProductForm'
-import { Plus, Search, Package, Save, Loader2, X } from 'lucide-react'
+import { Plus, Search, Package, Save, Loader2, X, Filter } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Modal from '@/components/ui/Modal'
+import { motion, AnimatePresence } from 'framer-motion'
 
 function AdminProduitsContent() {
   const supabase = createClient()
@@ -17,7 +18,6 @@ function AdminProduitsContent() {
   const [categories, setCategories] = useState<any[]>([])
   const [search, setSearch] = useState('')
   
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
 
@@ -78,7 +78,6 @@ function AdminProduitsContent() {
 
   const handleFormSuccess = () => {
     setIsModalOpen(false)
-    // Clear search param if it exists
     if (searchParams.get('edit')) {
       router.push('/admin/produits')
     }
@@ -90,69 +89,92 @@ function AdminProduitsContent() {
     p.categories?.name?.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (loading && produits.length === 0) return <div className="p-8 text-white font-mono text-xs">Chargement du catalogue...</div>
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 min-h-screen pb-20">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-white flex items-center gap-3">
-             <Package className="text-orange-500" size={32} />
-             Produits
-          </h1>
-          <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Gérer votre catalogue et vos stocks</p>
+    <div className="space-y-12 pb-20">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.3em] mb-2">
+             <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse" /> Inventory Control
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none">Produits</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.1em] text-xs">Catalogue & Gestion des Stocks</p>
         </div>
         <div className="flex gap-4">
-           <button 
-             onClick={handleOpenAdd}
-             className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20 active:scale-95"
-           >
-             <Plus size={20} /> Nouveau Produit
-           </button>
+          <button 
+            onClick={handleOpenAdd}
+            className="bg-white text-background px-8 py-4 rounded-[1.2rem] font-black text-sm flex items-center gap-3 transition-all shadow-xl shadow-white/5 hover:scale-105 active:scale-95"
+          >
+            <Plus size={20} strokeWidth={3} />
+            AJOUTER UN PRODUIT
+          </button>
         </div>
       </header>
 
-      <div className="bg-[#1e293b] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-         <div className="p-6 border-b border-slate-800 bg-slate-800/20">
-            <div className="relative max-w-md">
-               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-               <input 
-                 value={search}
-                 onChange={e => setSearch(e.target.value)}
-                 placeholder="Rechercher un produit ou catégorie..." 
-                 className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl pl-11 pr-4 py-3 text-white text-sm font-bold focus:border-orange-500 outline-none transition-all"
-               />
+      <div className="space-y-8">
+        <div className="glass p-8 rounded-[2.5rem] border-white/5 flex flex-col md:flex-row gap-6 items-center justify-between">
+           <div className="relative w-full md:max-w-xl">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+              <input 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="RECHERCHER UN PRODUIT..." 
+                className="w-full bg-white/5 border border-white/5 rounded-2xl pl-16 pr-6 py-4 text-white text-sm font-black focus:border-brand-primary outline-none transition-all placeholder:text-slate-700 uppercase tracking-widest"
+              />
+           </div>
+           <div className="flex gap-4 w-full md:w-auto">
+              <button className="flex-1 md:flex-none glass border-white/5 px-6 py-4 rounded-2xl flex items-center justify-center gap-3 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-white transition-all">
+                 <Filter size={16} /> Filtres
+              </button>
+           </div>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-[2.5rem] overflow-hidden border-white/5 shadow-2xl shadow-black/40"
+        >
+          {loading && produits.length === 0 ? (
+            <div className="p-20 text-center space-y-4">
+              <Loader2 className="mx-auto text-brand-primary animate-spin" size={48} />
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Synchronisation du catalogue...</p>
             </div>
-         </div>
-         <ProductList 
-           produits={filteredProduits} 
-           onEdit={handleEdit}
-           onDelete={handleDelete}
-         />
+          ) : (
+            <ProductList 
+              produits={filteredProduits} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
+        </motion.div>
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={editingProduct ? "Modifier le produit" : "Ajouter un produit"} 
-        maxWidth="max-w-5xl"
-      >
-         <div className="max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
-            <ProductForm 
-              categories={categories} 
-              initialData={editingProduct} 
-              onSuccess={handleFormSuccess}
-            />
-         </div>
-      </Modal>
+      <AnimatePresence>
+        {isModalOpen && (
+          <Modal 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            title={editingProduct ? "MODIFIER PRODUIT" : "NOUVEAU PRODUIT"} 
+            maxWidth="max-w-6xl"
+          >
+             <div className="max-h-[85vh] overflow-y-auto pr-4 custom-scrollbar">
+                <ProductForm 
+                  categories={categories} 
+                  initialData={editingProduct} 
+                  onSuccess={handleFormSuccess}
+                />
+             </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 export default function AdminProduitsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-white font-mono text-xs">Initialisation...</div>}>
+    <Suspense fallback={<div className="p-20 text-center text-slate-500 font-black text-[10px] uppercase tracking-[0.5em]">Initialisation...</div>}>
       <AdminProduitsContent />
     </Suspense>
   )
 }
+

@@ -1,12 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f172a;
+  /* Deep Dark Theme Base */
+  --background: #030712;
   --foreground: #f8fafc;
-  --brand-teal: #38a3a5;
-  --brand-orange: #f39237;
-  --brand-teal-light: #57cc99;
-  --brand-orange-light: #ffb4a2;
+  
+  /* Modernized Brand Colors */
+  --brand-teal: #2dd4bf;
+  --brand-orange: #fb923c;
+  
+  /* Glassmorphism System */
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 16px;
+  
+  /* Subtle Accents */
+  --accent-blue: #38bdf8;
+  --accent-purple: #818cf8;
 }
 
 @theme inline {
@@ -14,13 +24,42 @@
   --color-foreground: var(--foreground);
   --color-brand-primary: var(--brand-teal);
   --color-brand-secondary: var(--brand-orange);
-  --color-brand-accent: var(--brand-teal-light);
+  --color-glass: var(--glass-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Custom Shadows */
+  --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --shadow-teal: 0 20px 40px -15px rgba(45, 212, 191, 0.15);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Glass Effect Utility */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-premium);
+}
+
+/* Animated Gradient Background */
+.bg-mesh {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(45, 212, 191, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(251, 146, 60, 0.05) 0px, transparent 50%);
+}
+

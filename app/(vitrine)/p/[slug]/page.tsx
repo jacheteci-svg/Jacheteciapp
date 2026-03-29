@@ -9,7 +9,8 @@ import StockBadge from '@/components/vitrine/StockBadge'
 import Header from '@/components/vitrine/Header'
 import WhatsAppButton from '@/components/vitrine/WhatsAppButton'
 import SEO from '@/components/common/SEO'
-import { ShieldCheck, Truck, RefreshCcw } from 'lucide-react'
+import { ShieldCheck, Truck, RefreshCcw, Star, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -29,7 +30,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const photos = produit.produit_photos?.sort((a: any, b: any) => a.ordre - b.ordre) || []
 
   return (
-    <div className="bg-slate-50 min-h-screen text-slate-900 pb-32 font-sans overflow-x-hidden">
+    <div className="bg-[#030712] min-h-screen text-white pb-32 font-sans overflow-x-hidden bg-mesh selection:bg-brand-primary/30">
       <SEO 
         title={produit.nom}
         description={produit.description?.substring(0, 160)}
@@ -39,110 +40,157 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       />
       <Header />
 
-      <main className="max-w-4xl mx-auto md:py-12 px-0 md:px-4">
-        <div className="bg-white md:rounded-[3rem] overflow-hidden md:shadow-2xl md:shadow-brand-primary/5 flex flex-col md:flex-row gap-0">
+      <main className="max-w-6xl mx-auto pt-24 md:pt-40 px-4 md:px-8">
+        {/* Breadcrumb & Navigation */}
+        <div className="mb-10 flex items-center gap-4">
+           <Link href="/#catalogue" className="glass p-3 rounded-2xl border-white/5 text-slate-400 hover:text-white hover:border-white/20 transition-all flex items-center justify-center shrink-0">
+              <ChevronLeft size={20} strokeWidth={3} />
+           </Link>
+           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              <Link href="/" className="hover:text-brand-primary transition-colors">ACCUEIL</Link>
+              <span className="opacity-20">/</span>
+              <span className="text-brand-primary">{produit.categories?.name || 'BOUTIQUE'}</span>
+           </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 items-start">
           
-          {/* LEFT: Carousel */}
-          <section className="w-full md:w-1/2 relative bg-white border-b md:border-b-0 md:border-r border-slate-100">
-            <ProductCarousel photos={photos} />
+          {/* LEFT: Product Visuals */}
+          <section className="w-full lg:w-[55%] relative space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
+            <div className="glass rounded-[3.5rem] overflow-hidden border-white/5 shadow-2xl shadow-black/50 group">
+              <ProductCarousel photos={photos} />
+            </div>
+            
+            {/* Desktop Features Badges */}
+            <div className="hidden lg:grid grid-cols-3 gap-6">
+               {[
+                 { icon: Truck, title: "LIVRAISON 48H", desc: "Abidjan & Intérieur", color: "text-brand-primary", bg: "bg-brand-primary/10" },
+                 { icon: ShieldCheck, title: "Paiement Sûr", desc: "Payez à la réception", color: "text-accent-blue", bg: "bg-accent-blue/10" },
+                 { icon: RefreshCcw, title: "Qualité Pro", desc: "Vérifié avant envoi", color: "text-brand-secondary", bg: "bg-brand-secondary/10" }
+               ].map((f, i) => (
+                 <div key={i} className="glass p-6 rounded-[2rem] border-white/5 space-y-3">
+                    <div className={`${f.bg} ${f.color} w-10 h-10 rounded-xl flex items-center justify-center`}>
+                       <f.icon size={20} strokeWidth={2.5} />
+                    </div>
+                    <div className="space-y-1">
+                       <h3 className="text-[10px] font-black uppercase tracking-widest text-white">{f.title}</h3>
+                       <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">{f.desc}</p>
+                    </div>
+                 </div>
+               ))}
+            </div>
           </section>
 
-          {/* RIGHT: Product Infos */}
-          <section className="w-full md:w-1/2 p-6 md:p-12 space-y-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                 <span className="text-brand-primary text-xs font-black uppercase tracking-widest bg-brand-primary/5 px-3 py-1 rounded-full">
-                   {produit.categories?.name || 'Produit'}
+          {/* RIGHT: Product Information */}
+          <section className="w-full lg:w-[45%] sticky top-32 space-y-10 animate-in fade-in slide-in-from-right-8 duration-1000">
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                 <span className="text-brand-primary text-[10px] font-black uppercase tracking-[0.3em] bg-brand-primary/10 border border-brand-primary/20 px-4 py-2 rounded-full">
+                   {produit.categories?.name || 'EXCLUSIVITÉ'}
                  </span>
                  <StockBadge quantity={produit.quantite} />
               </div>
-              <h1 className="text-3xl md:text-5xl font-black leading-[1.1] tracking-tighter text-slate-900">
+              <h1 className="text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter italic">
                 {produit.nom}
               </h1>
+              
+              <div className="flex items-center gap-3">
+                 <div className="flex text-brand-primary gap-0.5">
+                    {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" strokeWidth={0} />)}
+                 </div>
+                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">(128 avis vérifiés)</span>
+              </div>
             </div>
 
-            <div className="flex items-end gap-3 py-2">
-              <span className="text-5xl font-black text-brand-primary tracking-tighter">
-                {formatPrix(produit.prix)}
-              </span>
+            <div className="flex items-end gap-6 py-4 border-y border-white/5">
+              <div className="flex flex-col">
+                 <span className="text-6xl md:text-7xl font-black text-white tracking-tighter italic drop-shadow-xl">
+                   {formatPrix(produit.prix)}
+                 </span>
+                 {produit.prix_barre && (
+                   <span className="text-2xl text-slate-600 line-through font-bold -mt-2">
+                     {formatPrix(produit.prix_barre)}
+                   </span>
+                 )}
+              </div>
               {produit.prix_barre && (
-                <span className="text-2xl text-slate-300 line-through font-bold mb-1">
-                  {formatPrix(produit.prix_barre)}
-                </span>
+                 <div className="mb-4 bg-brand-secondary px-3 py-1 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-brand-secondary/20">
+                    - {Math.round(((produit.prix_barre - produit.prix) / produit.prix_barre) * 100)} %
+                 </div>
               )}
             </div>
 
-            {/* Rassurance Grid */}
-            <div className="grid grid-cols-1 gap-4 pt-4 border-t border-slate-50">
-               <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
-                  <div className="w-8 h-8 rounded-full bg-green-50 text-green-500 flex items-center justify-center shrink-0">
-                     <Truck size={18} />
-                  </div>
-                  Livraison Partout à Abidjan sous 48h
-               </div>
-               <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
-                     <ShieldCheck size={18} />
-                  </div>
-                  Paiement sécurisé à la livraison
-               </div>
-               <div className="flex items-center gap-3 text-sm font-bold text-slate-500">
-                  <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
-                     <RefreshCcw size={18} />
-                  </div>
-                  Vérifiez le produit avant de payer
-               </div>
+            {/* CTAs & Options */}
+            <div className="glass p-8 md:p-10 rounded-[3rem] border-white/5 shadow-2xl shadow-black/40">
+               <ProductActions produit={produit} />
             </div>
 
-            {/* CTAs */}
-            <div className="pt-6">
-               <ProductActions produit={produit} />
+            {/* Mobile Features Badges (Compact) */}
+            <div className="lg:hidden flex flex-wrap gap-4">
+               {[
+                 { icon: Truck, title: "LIVRAISON 48H", color: "text-brand-primary" },
+                 { icon: ShieldCheck, title: "Paiement Sûr", color: "text-accent-blue" },
+                 { icon: RefreshCcw, title: "Vérifier à réception", color: "text-brand-secondary" }
+               ].map((f, i) => (
+                 <div key={i} className="flex items-center gap-2 glass px-4 py-2 rounded-full border-white/5">
+                    <f.icon size={12} className={f.color} />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">{f.title}</span>
+                 </div>
+               ))}
             </div>
           </section>
         </div>
 
-        {/* BOTTOM CONTENT: Description & Social Proof */}
-        <div className="mt-8 md:mt-12 space-y-12 px-4 md:px-0">
-           <section className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
-              <div className="space-y-4">
-                 <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                    <div className="w-2 h-8 bg-brand-primary rounded-full" />
-                    Description du produit
-                 </h2>
-                 <div className="text-slate-600 leading-relaxed whitespace-pre-wrap text-lg font-medium">
-                    {produit.description}
+        {/* DETAILS SECTION */}
+        <div className="mt-32 space-y-20 lg:space-y-40">
+           {/* Description Container */}
+           <section className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-primary/20 via-transparent to-accent-blue/20 rounded-[4rem] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
+              <div className="relative glass p-10 md:p-24 rounded-[4rem] border-white/5 space-y-12 overflow-hidden">
+                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-primary/5 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none" />
+                 
+                 <div className="space-y-6 relative z-10">
+                    <h2 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter flex items-center gap-6">
+                       <span className="w-12 h-1 bg-brand-primary rounded-full hidden md:block" />
+                       DESCRIPTION DÉTAILLÉE
+                    </h2>
+                    <div className="text-slate-400 leading-relaxed whitespace-pre-wrap text-lg md:text-xl font-medium tracking-tight max-w-4xl">
+                       {produit.description}
+                    </div>
                  </div>
               </div>
            </section>
 
-           <section className="bg-brand-primary/5 p-8 md:p-12 rounded-[2.5rem] border border-brand-primary/10">
+           {/* Social Proof & Reviews (Abstracted) */}
+           <section className="glass-card p-10 md:p-24 rounded-[4rem] border-white/5 bg-brand-primary/[0.02] relative overflow-hidden">
+              <div className="absolute inset-0 bg-mesh opacity-30" />
               <SocialProof />
            </section>
 
-           <section className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Questions fréquentes</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div className="bg-slate-50 p-6 rounded-3xl">
-                    <a 
-                       href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BOUTIQUE || '2250700000000'}?text=Bonjour, je souhaite avoir plus d'informations.`}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       className="block"
-                    >
-                       <h3 className="font-bold mb-2 text-slate-900">Combien de temps pour la livraison ?</h3>
-                       <p className="text-slate-600 font-medium text-sm">Nous livrons sous 24h à 48h partout à Abidjan.</p>
-                    </a>
-                 </div>
-                 <div className="bg-slate-50 p-6 rounded-3xl">
-                    <h3 className="font-bold mb-2 text-slate-900">Puis-je payer à la livraison ?</h3>
-                    <p className="text-slate-600 font-medium text-sm">Oui, vous payez cash seulement après avoir reçu et vérifié votre produit.</p>
-                 </div>
+           {/* FAQ / Support */}
+           <section className="space-y-12 pb-20">
+              <div className="text-center space-y-4">
+                 <h2 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter">QUESTIONS FRÉQUENTES</h2>
+                 <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Besoin de plus d'infos ? Contactez-nous</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                 {[
+                   { q: "Combien de temps pour la livraison ?", a: "Nous livrons sous 24h à 48h partout à Abidjan. Pour l'intérieur, comptez 72h maximum." },
+                   { q: "Puis-je payer à la livraison ?", a: "Affirmatif. C'est le standard J'achète.ci : vérifiez, testez et payez seulement si vous êtes 100% satisfait." },
+                   { q: "Politique de retour ?", a: "Si le produit ne correspond pas à vos attentes lors de la livraison, vous pouvez le refuser sans frais." },
+                   { q: "Discutez en direct ?", a: "Notre équipe est disponible 24/7 sur WhatsApp pour toutes vos questions spécifiques." }
+                 ].map((faq, i) => (
+                    <div key={i} className="glass p-10 rounded-[3rem] border-white/5 space-y-4 hover:border-brand-primary/20 transition-all duration-500">
+                       <h3 className="font-black text-xl italic tracking-tight text-white">{faq.q}</h3>
+                       <p className="text-slate-400 font-medium leading-relaxed">{faq.a}</p>
+                    </div>
+                 ))}
               </div>
            </section>
         </div>
       </main>
 
-      {/* Floating CTA WhatsApp */}
       <WhatsAppButton />
     </div>
   )

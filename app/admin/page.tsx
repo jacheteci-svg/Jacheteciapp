@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import StatsCards from '@/components/admin/Dashboard/StatsCards'
 import RecentOrders from '@/components/admin/Dashboard/RecentOrders'
 import AnalyticsCharts from '@/components/admin/Dashboard/AnalyticsCharts'
-import { Plus, Package, BarChart3 } from 'lucide-react'
+import { Plus, Package, BarChart3, Bell, ArrowRight, ShieldAlert, Truck } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function AdminDashboard() {
@@ -25,7 +25,7 @@ export default async function AdminDashboard() {
     .select('created_at, client_quartier')
     .gte('created_at', dateStr)
 
-  // 3. Location Data (All time or last 30 days for better overview)
+  // 3. Location Data
   const { data: locationsRaw } = await supabase
     .from('commandes')
     .select('client_quartier')
@@ -33,7 +33,6 @@ export default async function AdminDashboard() {
   // Process data for charts
   const processByDay = (raw: any[]) => {
     const days: any = {}
-    // Initialize last 7 days
     for (let i = 6; i >= 0; i--) {
       const d = new Date()
       d.setDate(d.getDate() - i)
@@ -58,7 +57,7 @@ export default async function AdminDashboard() {
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => (b.value as number) - (a.value as number))
-      .slice(0, 5) // Top 5
+      .slice(0, 5)
   }
 
   // 4. Detailed Stats for Cards
@@ -92,59 +91,100 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Dashboard</h1>
-          <p className="text-slate-400 font-medium font-mono text-xs uppercase tracking-widest mt-1">Vue d'ensemble de l'activité</p>
+    <div className="space-y-12 pb-20">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.3em] mb-2">
+             <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse" /> Live Overview
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none">Dashboard</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.1em] text-xs">Performance & Hub Opérationnel</p>
         </div>
-        <div className="flex gap-3">
-          <Link href="/admin/produits/nouveau" className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-500/20 active:scale-95">
-            <Plus size={18} />
-            Nouveau Produit
+        <div className="flex gap-4">
+          <Link href="/admin/produits/nouveau" className="bg-white text-background px-8 py-4 rounded-[1.2rem] font-black text-sm flex items-center gap-3 transition-all shadow-xl shadow-white/5 hover:scale-105 active:scale-95">
+            <Plus size={20} strokeWidth={3} />
+            AJOUTER UN PRODUIT
           </Link>
         </div>
       </header>
 
-      {/* Stats Cards */}
+      {/* Stats Cards Row */}
       <StatsCards data={statsData} />
 
-      {/* Analytics Charts */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2 px-2">
-          <BarChart3 size={20} className="text-orange-500" />
-          Analyses de Performance
-        </h2>
-        <AnalyticsCharts data={chartData} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Orders Table */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package size={20} className="text-orange-500" />
-              Dernières Commandes
-            </h2>
-            <Link href="/admin/commandes" className="text-orange-500 text-sm font-bold hover:underline">Voir tout</Link>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+        {/* Left Column: Charts & Recent Orders */}
+        <div className="lg:col-span-2 space-y-16">
+          <div className="space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-2xl font-black text-white flex items-center gap-4 tracking-tight">
+                <BarChart3 size={24} className="text-brand-primary" />
+                Analyses de Performance
+              </h2>
+            </div>
+            <AnalyticsCharts data={chartData} />
           </div>
-          <RecentOrders />
+
+          <div className="space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-2xl font-black text-white flex items-center gap-4 tracking-tight">
+                <Package size={24} className="text-accent-blue" />
+                Activités Récentes
+              </h2>
+              <Link href="/admin/commandes" className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">
+                Voir tout <ArrowRight size={14} />
+              </Link>
+            </div>
+            <RecentOrders />
+          </div>
         </div>
 
-        {/* Status Breakdown / Alerts */}
-        <div className="space-y-6">
-           <h2 className="text-xl font-bold text-white px-2">Alertes Stock</h2>
-           <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4">
-              <div className="flex items-start gap-4 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl">
-                <div className="bg-red-500/20 p-2 rounded-lg text-red-400">⚠️</div>
-                <div>
-                  <p className="font-bold text-red-200 text-sm leading-tight">Stock critique</p>
-                  <p className="text-xs text-red-400/80 mt-1">Vérifiez les niveaux de produits bientôt en rupture.</p>
-                </div>
+        {/* Right Column: Alerts & Status */}
+        <aside className="space-y-10 lg:sticky lg:top-10">
+           <div className="glass rounded-[2.5rem] p-8 border-white/5 space-y-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-secondary/5 rounded-full blur-3xl" />
+              <div className="flex items-center justify-between relative z-10">
+                 <h3 className="text-xl font-black text-white tracking-tight">Poste de Contrôle</h3>
+                 <Bell className="text-slate-600" size={20} />
+              </div>
+              
+              <div className="space-y-4 relative z-10">
+                 <div className="flex items-start gap-4 p-5 glass bg-brand-secondary/5 border-brand-secondary/10 rounded-[1.5rem] group hover:border-brand-secondary/30 transition-all cursor-pointer">
+                    <div className="bg-brand-secondary/20 p-3 rounded-xl text-brand-secondary">
+                       <ShieldAlert size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="font-black text-white text-sm uppercase tracking-tight">Stock Critique</p>
+                      <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">3 produits sont presque en rupture. Réapprovisionnement suggéré.</p>
+                    </div>
+                 </div>
+
+                 <div className="flex items-start gap-4 p-5 glass bg-accent-blue/5 border-accent-blue/10 rounded-[1.5rem] group hover:border-accent-blue/30 transition-all cursor-pointer">
+                    <div className="bg-accent-blue/20 p-3 rounded-xl text-accent-blue">
+                       <Truck size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="font-black text-white text-sm uppercase tracking-tight">Logistique</p>
+                      <p className="text-[11px] text-slate-500 font-bold mt-1 leading-relaxed">8 livraisons sont prévues pour aujourd'hui.</p>
+                    </div>
+                 </div>
+              </div>
+
+              <Link href="/admin/parametres" className="block w-full text-center py-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black text-slate-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-[0.2em]">
+                 Configuration Système
+              </Link>
+           </div>
+
+           <div className="px-8 space-y-4">
+              <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em]">Version Système</p>
+              <div className="flex items-center gap-3">
+                 <div className="px-3 py-1 glass rounded-full text-[10px] font-black text-brand-primary border-brand-primary/20">v4.0.2-PREMIUM</div>
+                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               </div>
            </div>
-        </div>
+        </aside>
       </div>
     </div>
   )
 }
+

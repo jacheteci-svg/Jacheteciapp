@@ -2,10 +2,12 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { ShoppingBag, Star, Zap, Check } from 'lucide-react'
+import { ShoppingBag, Star, Zap, Check, ChevronRight } from 'lucide-react'
 import OrderForm from './OrderForm'
 import { formatPrix } from '@/lib/utils/formatPrix'
 import * as track from '@/lib/pixel/tracking'
+import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils/cn'
 
 interface Props {
   produit: any
@@ -34,7 +36,6 @@ export default function ProductActions({ produit }: Props) {
   // Calculate current price based on selected variants (if override exists)
   const currentPrice = useMemo(() => {
     let price = produit.prix
-    // For simplicity, we take the last selected variant's price override if it exists
     Object.entries(selectedVariants).forEach(([name, value]) => {
       const v = variantsByName[name]?.find((variant: any) => variant.value === value)
       if (v?.price_override) price = v.price_override
@@ -50,101 +51,140 @@ export default function ProductActions({ produit }: Props) {
 
   return (
     <>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-10">
         
         {/* Variant Selection UI */}
         {variantNames.length > 0 && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {variantNames.map(name => (
-              <div key={name} className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sélectionner {name}</label>
-                  {selectedVariants[name] && (
-                    <span className="text-[10px] font-black text-brand-primary uppercase flex items-center gap-1">
-                      <Check size={12} strokeWidth={3} /> {selectedVariants[name]}
-                    </span>
-                  )}
+              <div key={name} className="space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">CHOISIR {name}</label>
+                  <AnimatePresence>
+                    {selectedVariants[name] && (
+                      <motion.span 
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="text-[10px] font-black text-brand-primary uppercase flex items-center gap-2"
+                      >
+                        <Check size={12} strokeWidth={4} /> {selectedVariants[name]}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {variantsByName[name].map((v: any) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => handleSelectVariant(name, v.value)}
-                      className={`px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border-2 ${
-                        selectedVariants[name] === v.value
-                          ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/25 scale-105'
-                          : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      {v.value}
-                      {v.price_override && (
-                        <span className="block text-[8px] opacity-70 mt-1">
-                          {formatPrix(v.price_override)}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-3">
+                  {variantsByName[name].map((v: any) => {
+                    const isSelected = selectedVariants[name] === v.value
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => handleSelectVariant(name, v.value)}
+                        className={cn(
+                          "relative px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 border overflow-hidden",
+                          isSelected
+                            ? 'bg-brand-primary border-brand-primary text-white shadow-2xl shadow-brand-primary/40 scale-105'
+                            : 'glass border-white/5 text-slate-400 hover:border-white/20 hover:text-white'
+                        )}
+                      >
+                        {isSelected && (
+                          <motion.div 
+                            layoutId={`${name}-active`}
+                            className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" 
+                          />
+                        )}
+                        <span className="relative z-10">{v.value}</span>
+                        {v.price_override && (
+                          <span className={cn(
+                             "block text-[8px] mt-1 italic tracking-normal font-bold",
+                             isSelected ? "text-white/60" : "text-brand-primary"
+                          )}>
+                            + {formatPrix(v.price_override - produit.prix)}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Dynamic Price Display (Internal to actions for better flow) */}
+        {/* Dynamic Price Display */}
         {variantNames.length > 0 && (
-            <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
-               <span className="text-3xl font-black text-brand-primary tracking-tighter">
-                  {formatPrix(currentPrice)}
-               </span>
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix final</span>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center gap-4 pt-8 border-t border-white/5"
+            >
+               <div className="flex flex-col">
+                  <span className="text-4xl font-black text-white tracking-tighter italic">
+                     {formatPrix(currentPrice)}
+                  </span>
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">PRIX DE VOTRE SÉLECTION</span>
+               </div>
+            </motion.div>
         )}
 
         {/* Main CTA Button */}
-        <div className="space-y-4">
-          <button 
+        <div className="space-y-6">
+          <motion.button 
+            whileHover={isAllSelected || variantNames.length === 0 ? { scale: 1.02 } : {}}
+            whileTap={isAllSelected || variantNames.length === 0 ? { scale: 0.98 } : {}}
             onClick={() => {
-              setIsModalOpen(true)
-              track.trackAddToCart(produit)
+              if (isAllSelected || variantNames.length === 0) {
+                setIsModalOpen(true)
+                track.trackAddToCart(produit)
+              }
             }}
-            className={`w-full py-6 rounded-[2rem] font-black text-2xl shadow-xl transition-all flex items-center justify-center gap-3 group ${
+            className={cn(
+              "w-full py-7 rounded-[2.5rem] font-black text-2xl tracking-tighter shadow-2xl transition-all flex items-center justify-center gap-4 group relative overflow-hidden italic",
               isAllSelected || variantNames.length === 0
-                ? 'bg-brand-primary text-white shadow-brand-primary/25 hover:scale-[1.02] active:scale-95 animate-pulse-slow'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-            }`}
+                ? 'bg-white text-black shadow-white/10 hover:shadow-white/20'
+                : 'glass border-white/5 text-slate-600 cursor-not-allowed opacity-50'
+            )}
           >
-            <ShoppingBag size={28} strokeWidth={3} className="group-hover:rotate-12 transition-transform" />
-            {isAllSelected || variantNames.length === 0 ? 'COMMANDER MAINTENANT' : 'CHOISIR VOS OPTIONS'}
-          </button>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            <ShoppingBag size={28} strokeWidth={3} className="group-hover:rotate-12 transition-transform duration-500" />
+            {isAllSelected || variantNames.length === 0 ? 'VALIDER MA COMMANDE' : 'CHOISIR OPTIONS'}
+          </motion.button>
 
           {/* Rassurance Tags */}
-          <div className="flex flex-wrap gap-3 justify-center">
-             <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                <Zap size={14} className="text-orange-500" /> Stock Limité
+          <div className="flex flex-wrap gap-4 justify-center items-center">
+             <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest glass px-4 py-2 rounded-full border-white/5">
+                <Zap size={14} className="text-brand-secondary animate-pulse" /> STOCK TRÈS LIMITÉ
              </div>
-             <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                <Star size={14} className="text-brand-secondary" /> Qualité Premium
+             <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest glass px-4 py-2 rounded-full border-white/5">
+                <Star size={14} className="text-brand-primary" fill="currentColor" /> SÉLECTION PREMIUM
              </div>
           </div>
         </div>
       </div>
 
       {/* Sticky Mobile CTA */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:hidden animate-in slide-in-from-bottom-full duration-500 ease-out">
-         <button 
-           onClick={() => setIsModalOpen(true)}
-           disabled={!(isAllSelected || variantNames.length === 0)}
-           className={`w-full py-5 rounded-2xl font-black text-xl shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 ${
-              isAllSelected || variantNames.length === 0
-                ? 'bg-brand-primary text-white shadow-brand-primary/20'
-                : 'bg-slate-200 text-slate-400'
-           }`}
-         >
-           <ShoppingBag size={24} strokeWidth={3} />
-           {isAllSelected || variantNames.length === 0 ? 'ACHETER MAINTENANT' : 'CHOISIR OPTIONS'}
-         </button>
-      </div>
+      <AnimatePresence>
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 p-6 bg-[#030712]/80 backdrop-blur-3xl border-t border-white/5 z-40 lg:hidden"
+        >
+           <button 
+             onClick={() => setIsModalOpen(true)}
+             disabled={!(isAllSelected || variantNames.length === 0)}
+             className={cn(
+               "w-full py-6 rounded-[2rem] font-black text-xl italic tracking-tighter shadow-2xl transition-all flex items-center justify-center gap-4 active:scale-95",
+               isAllSelected || variantNames.length === 0
+                 ? 'bg-white text-black shadow-white/5'
+                 : 'glass border-white/5 text-slate-700'
+             )}
+           >
+             <ShoppingBag size={24} strokeWidth={3} />
+             {isAllSelected || variantNames.length === 0 ? 'ACHETER MAINTENANT' : 'CHOISIR OPTIONS'}
+             <ChevronRight size={20} strokeWidth={3} className="ml-2" />
+           </button>
+        </motion.div>
+      </AnimatePresence>
 
       {/* The Modal Order Form */}
       <OrderForm 

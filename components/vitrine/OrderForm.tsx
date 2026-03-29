@@ -2,8 +2,12 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import * as track from '@/lib/pixel/tracking'
-import { X, CheckCircle2, ShoppingBag } from 'lucide-react'
+import { X, CheckCircle2, ShoppingBag, Truck, Zap, Star, Check } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { formatPrix } from '@/lib/utils/formatPrix'
+import { cn } from '@/lib/utils/cn'
 
 interface Props {
   produit: any
@@ -57,10 +61,8 @@ export default function OrderForm({ produit, selectedVariants, isOpen, onClose }
         const data = await res.json()
         
         if (data.success) {
-          // Standardized Pixel Event
           track.trackPurchase(produit, formData.quantite, data.commandeId)
 
-          // CAPI Trigger
           await fetch('/api/pixel/capi', {
             method: 'POST',
             body: JSON.stringify({
@@ -75,11 +77,10 @@ export default function OrderForm({ produit, selectedVariants, isOpen, onClose }
 
           setIsSuccess(true)
           
-          // Small delay before redirect to show success state in modal
           setTimeout(() => {
             router.push(`/confirmation?id=${data.commandeId}`)
             onClose()
-          }, 1500)
+          }, 2000)
         }
       } catch (err) {
         alert("Une erreur est survenue. Veuillez réessayer.")
@@ -90,151 +91,181 @@ export default function OrderForm({ produit, selectedVariants, isOpen, onClose }
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Overlay */}
-      <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" 
-        onClick={onClose}
+      <motion.div 
+         initial={{ opacity: 0 }}
+         animate={{ opacity: 1 }}
+         exit={{ opacity: 0 }}
+         className="absolute inset-0 bg-black/80 backdrop-blur-xl" 
+         onClick={onClose}
       />
       
       {/* Modal Content */}
-      <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative glass w-full max-w-lg rounded-[3.5rem] shadow-[0_0_100px_-20px_rgba(45,212,191,0.2)] border-white/10 overflow-hidden"
+      >
         
         {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-brand-primary hover:text-white transition-all z-10"
+          className="absolute top-8 right-8 p-3 glass rounded-2xl text-slate-400 hover:text-white hover:border-white/20 transition-all z-20"
         >
           <X size={20} strokeWidth={3} />
         </button>
 
-        {isSuccess ? (
-          <div className="p-12 text-center space-y-6 animate-in zoom-in duration-500">
-            <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto">
-               <CheckCircle2 size={64} strokeWidth={2.5} />
-            </div>
-            <div className="space-y-2">
-               <h2 className="text-3xl font-black text-slate-900 leading-tight">Commande Validée !</h2>
-               <p className="text-slate-500 font-medium text-lg">Merci {formData.client_nom.split(' ')[0]}. Nous préparons votre colis.</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Header */}
-            <div className="bg-slate-50 p-8 border-b border-slate-100 flex items-center gap-4">
-                <div className="w-16 h-16 relative rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                  {produit.produit_photos?.[0]?.url ? (
-                    <Image 
-                      src={produit.produit_photos[0].url} 
-                      alt={produit.nom} 
-                      fill 
-                      className="object-cover" 
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                       <ShoppingBag size={24} />
-                    </div>
-                  )}
-               </div>
-               <div>
-                  <h2 className="text-lg font-black text-slate-900 leading-tight line-clamp-1">{produit.nom}</h2>
-                  <p className="text-brand-primary font-black text-xl tracking-tighter">{formatPrix(produit.prix)}</p>
-               </div>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <AnimatePresence mode="wait">
+          {isSuccess ? (
+            <motion.div 
+              key="success"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-16 text-center space-y-8"
+            >
+              <div className="relative mx-auto w-32 h-32">
+                 <div className="absolute inset-0 bg-brand-primary/20 blur-3xl rounded-full animate-pulse" />
+                 <div className="relative w-full h-full bg-brand-primary/10 text-brand-primary rounded-[2.5rem] flex items-center justify-center border border-brand-primary/20">
+                    <CheckCircle2 size={72} strokeWidth={2} />
+                 </div>
+              </div>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Votre nom complet</label>
-                  <input 
-                    required
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 focus:border-brand-primary focus:bg-white transition-all outline-none font-bold text-slate-800 placeholder:text-slate-300"
-                    placeholder="Ex: Jean Kouassi"
-                    value={formData.client_nom}
-                    onChange={e => setFormData({...formData, client_nom: e.target.value})}
-                  />
-                </div>
+                 <h2 className="text-4xl font-black text-white italic tracking-tighter">COMMANDE VALIDÉE !</h2>
+                 <p className="text-slate-400 font-medium text-lg leading-relaxed">
+                    Merci <span className="text-white">{formData.client_nom.split(' ')[0]}</span>. <br/>
+                    Votre pépite est en route pour la livraison.
+                 </p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div key="form" className="flex flex-col">
+              {/* Header */}
+              <div className="bg-white/5 p-10 border-b border-white/5 flex items-center gap-6">
+                  <div className="w-20 h-20 relative rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shrink-0 shadow-2xl">
+                    {produit.produit_photos?.[0]?.url ? (
+                      <Image 
+                        src={produit.produit_photos[0].url} 
+                        alt={produit.nom} 
+                        fill 
+                        className="object-cover" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-700">
+                         <ShoppingBag size={32} />
+                      </div>
+                    )}
+                 </div>
+                 <div className="space-y-1">
+                    <h2 className="text-xl font-black text-white italic tracking-tighter leading-tight line-clamp-1 uppercase">{produit.nom}</h2>
+                    <div className="flex items-center gap-3">
+                       <p className="text-brand-primary font-black text-2xl tracking-tighter">{formatPrix(produit.prix)}</p>
+                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest border border-white/5 px-2 py-0.5 rounded-md">1 UNITÉ</span>
+                    </div>
+                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Votre téléphone</label>
-                  <input 
-                    required
-                    type="tel"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 focus:border-brand-primary focus:bg-white transition-all outline-none font-bold text-slate-800 placeholder:text-slate-300"
-                    placeholder="Ex: 07 00 00 00 00"
-                    value={formData.client_tel}
-                    onChange={e => setFormData({...formData, client_tel: e.target.value})}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Votre quartier / Ville</label>
-                  <input 
-                    required
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 focus:border-brand-primary focus:bg-white transition-all outline-none font-bold text-slate-800 placeholder:text-slate-300"
-                    placeholder="Ex: Cocody Angré"
-                    value={formData.client_quartier}
-                    onChange={e => setFormData({...formData, client_quartier: e.target.value})}
-                  />
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="w-1/3 space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Qté</label>
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="p-10 space-y-10">
+                <div className="space-y-6">
+                  <div className="space-y-3 px-2">
+                    <div className="flex justify-between items-center">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">NOM COMPLET</label>
+                       {formData.client_nom.length > 3 && <Check size={12} className="text-brand-primary" strokeWidth={4} />}
+                    </div>
                     <input 
-                      type="number"
-                      min="1"
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 focus:border-brand-primary focus:bg-white transition-all outline-none font-bold text-slate-800"
-                      value={formData.quantite}
-                      onChange={e => setFormData({...formData, quantite: parseInt(e.target.value) || 1})}
+                      required
+                      className="w-full glass border-white/5 rounded-2xl px-6 py-5 focus:border-brand-primary/50 focus:bg-white/5 transition-all outline-none font-bold text-white placeholder:text-slate-700"
+                      placeholder="Ex: Jean Kouassi"
+                      value={formData.client_nom}
+                      onChange={e => setFormData({...formData, client_nom: e.target.value})}
                     />
                   </div>
-                  <div className="w-2/3 space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Paiement</label>
-                    <select 
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-4 focus:border-brand-primary focus:bg-white transition-all outline-none font-bold text-slate-800"
-                      value={formData.paiement_mode}
-                      onChange={e => setFormData({...formData, paiement_mode: e.target.value})}
-                    >
-                      <option value="livraison">Cash Livraison</option>
-                      <option value="wave">Wave</option>
-                      <option value="orange_money">Orange Money</option>
-                    </select>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-3 px-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">TÉLÉPHONE</label>
+                        <input 
+                          required
+                          type="tel"
+                          className="w-full glass border-white/5 rounded-2xl px-6 py-5 focus:border-brand-primary/50 focus:bg-white/5 transition-all outline-none font-bold text-white placeholder:text-slate-700"
+                          placeholder="Ex: 07 00 00 00 00"
+                          value={formData.client_tel}
+                          onChange={e => setFormData({...formData, client_tel: e.target.value})}
+                        />
+                     </div>
+                     <div className="space-y-3 px-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">QUARTIER / VILLE</label>
+                        <input 
+                          required
+                          className="w-full glass border-white/5 rounded-2xl px-6 py-5 focus:border-brand-primary/50 focus:bg-white/5 transition-all outline-none font-bold text-white placeholder:text-slate-700"
+                          placeholder="Ex: Cocody Angré"
+                          value={formData.client_quartier}
+                          onChange={e => setFormData({...formData, client_quartier: e.target.value})}
+                        />
+                     </div>
+                  </div>
+
+                  <div className="flex gap-6">
+                    <div className="w-1/3 space-y-3 px-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">QTÉ</label>
+                      <input 
+                        type="number"
+                        min="1"
+                        className="w-full glass border-white/5 rounded-2xl px-6 py-5 focus:border-brand-primary/50 focus:bg-white/5 transition-all outline-none font-bold text-white"
+                        value={formData.quantite}
+                        onChange={e => setFormData({...formData, quantite: parseInt(e.target.value) || 1})}
+                      />
+                    </div>
+                    <div className="w-2/3 space-y-3 px-2">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">MODE PAIEMENT</label>
+                      <select 
+                        className="w-full glass border-white/5 rounded-2xl px-6 py-5 focus:border-brand-primary/50 focus:bg-white/5 transition-all outline-none font-bold text-white appearance-none cursor-pointer"
+                        value={formData.paiement_mode}
+                        onChange={e => setFormData({...formData, paiement_mode: e.target.value})}
+                      >
+                        <option value="livraison" className="bg-[#030712]">Cash Livraison</option>
+                        <option value="wave" className="bg-[#030712]">Wave</option>
+                        <option value="orange_money" className="bg-[#030712]">Orange Money</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button 
-                disabled={isPending}
-                className="w-full bg-brand-primary hover:bg-brand-primary/95 text-white font-black py-5 rounded-2xl shadow-xl shadow-brand-primary/30 active:scale-95 transition-all text-xl tracking-tight disabled:opacity-50 flex items-center justify-center gap-3 mt-4"
-              >
-                {isPending ? (
-                  <>
-                    <div className="w-5 h-5 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-                    Traitement...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag size={24} strokeWidth={3} />
-                    CONFIRMER L'ACHAT
-                  </>
-                )}
-              </button>
-              
-              <div className="text-center space-y-1">
-                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                   🤝 Paiement à la réception après vérification
-                 </p>
-                 <p className="text-[10px] text-orange-600 font-black uppercase tracking-widest">
-                   🚚 Livraison GRATUITE dès 2 produits !
-                 </p>
-              </div>
-            </form>
-          </>
-        )}
-      </div>
+                <div className="space-y-6">
+                   <button 
+                     disabled={isPending}
+                     className={cn(
+                        "w-full py-6 rounded-[2rem] font-black text-2xl italic tracking-tighter shadow-2xl transition-all flex items-center justify-center gap-4 relative overflow-hidden group",
+                        isPending ? "bg-white/10 text-slate-600" : "bg-white text-black hover:scale-[1.02] active:scale-95 shadow-white/10"
+                     )}
+                   >
+                     {isPending ? (
+                       <>
+                         <div className="w-6 h-6 border-4 border-black/10 border-t-black rounded-full animate-spin" />
+                         CHARGEMENT...
+                       </>
+                     ) : (
+                       <>
+                         <ShoppingBag size={28} strokeWidth={3} className="group-hover:rotate-12 transition-transform" />
+                         COMMANDER MAINTENANT
+                       </>
+                     )}
+                   </button>
+                   
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                         <Zap size={14} className="text-brand-secondary animate-pulse" /> STOCK LIMITÉ
+                      </div>
+                      <div className="flex items-center gap-2 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                         <Truck size={14} className="text-brand-primary" /> LIVRAISON 24H
+                      </div>
+                   </div>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   )
 }
-
-import Image from 'next/image'
-import { formatPrix } from '@/lib/utils/formatPrix'

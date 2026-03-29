@@ -16,6 +16,7 @@ import {
   Cell,
   Legend
 } from 'recharts'
+import { motion } from 'framer-motion'
 
 interface ChartData {
   visitors: any[]
@@ -23,112 +24,154 @@ interface ChartData {
   locations: any[]
 }
 
-const COLORS = ['#f97316', '#3b82f6', '#10b981', '#ef4444', '#a855f7']
+const COLORS = ['#2dd4bf', '#3b82f6', '#f97316', '#a855f7', '#ec4899']
 
 export default function AnalyticsCharts({ data }: { data: ChartData }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {/* Visitors Chart */}
-      <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4">
-        <h3 className="text-lg font-bold text-white px-2">Visiteurs (7 derniers jours)</h3>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        className="glass border-white/5 rounded-[2.5rem] p-8 space-y-6"
+      >
+        <div className="flex items-center justify-between px-2">
+           <h3 className="text-lg font-black text-white tracking-tight">Visiteurs</h3>
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">7 derniers jours</span>
+        </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data.visitors}>
               <defs>
                 <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" strokeOpacity={0.05} vertical={false} />
               <XAxis 
                 dataKey="date" 
                 stroke="#64748b" 
-                fontSize={12} 
+                fontSize={10} 
                 tickLine={false} 
                 axisLine={false}
+                dy={10}
               />
               <YAxis 
                 stroke="#64748b" 
-                fontSize={12} 
+                fontSize={10} 
                 tickLine={false} 
                 axisLine={false}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }}
-                itemStyle={{ color: '#f97316' }}
+                contentStyle={{ backgroundColor: '#030712', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', backdropFilter: 'blur(20px)' }}
+                itemStyle={{ color: '#2dd4bf', fontWeight: 'bold' }}
               />
               <Area 
                 type="monotone" 
                 dataKey="count" 
-                stroke="#f97316" 
+                stroke="#2dd4bf" 
                 fillOpacity={1} 
                 fill="url(#colorVisitors)" 
-                strokeWidth={3}
+                strokeWidth={4}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
       {/* Orders Chart */}
-      <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4">
-        <h3 className="text-lg font-bold text-white px-2">Commandes (7 derniers jours)</h3>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.1 }}
+        className="glass border-white/5 rounded-[2.5rem] p-8 space-y-6"
+      >
+        <div className="flex items-center justify-between px-2">
+           <h3 className="text-lg font-black text-white tracking-tight">Commandes</h3>
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Performance hebdomadaire</span>
+        </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.orders}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+               <defs>
+                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                   <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
+                   <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                 </linearGradient>
+               </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" strokeOpacity={0.05} vertical={false} />
               <XAxis 
                 dataKey="date" 
                 stroke="#64748b" 
-                fontSize={12} 
+                fontSize={10} 
                 tickLine={false} 
                 axisLine={false}
+                dy={10}
               />
               <YAxis 
                 stroke="#64748b" 
-                fontSize={12} 
+                fontSize={10} 
                 tickLine={false} 
                 axisLine={false}
               />
               <Tooltip 
-                cursor={{ fill: '#334155', opacity: 0.1 }}
-                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }}
-                itemStyle={{ color: '#3b82f6' }}
+                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                contentStyle={{ backgroundColor: '#030712', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', backdropFilter: 'blur(20px)' }}
+                itemStyle={{ color: '#3b82f6', fontWeight: 'bold' }}
               />
-              <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="url(#barGradient)" radius={8} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
+
 
       {/* Locations Chart */}
-      <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 space-y-4 md:col-span-2">
-        <h3 className="text-lg font-bold text-white px-2">Provenance des Commandes (Zones)</h3>
-        <div className="h-[300px] w-full flex flex-col md:flex-row items-center">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.2 }}
+        className="glass border-white/5 rounded-[2.5rem] p-8 space-y-6 md:col-span-2"
+      >
+        <div className="flex items-center justify-between px-2">
+           <h3 className="text-lg font-black text-white tracking-tight">Répartition Géographique</h3>
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Top Zones de Livraison</span>
+        </div>
+        <div className="h-[350px] w-full flex flex-col md:flex-row items-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data.locations}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
+                innerRadius={80}
+                outerRadius={120}
+                paddingAngle={8}
                 dataKey="value"
+                stroke="none"
               >
                 {data.locations.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip 
-                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px' }}
+                contentStyle={{ backgroundColor: '#030712', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', backdropFilter: 'blur(20px)' }}
               />
-              <Legend verticalAlign="middle" align="right" layout="vertical" formatter={(value) => <span className="text-slate-400 font-medium">{value}</span>}/>
+              <Legend 
+                verticalAlign="middle" 
+                align="right" 
+                layout="vertical" 
+                formatter={(value) => <span className="text-slate-400 font-bold text-sm ml-2 uppercase tracking-tight">{value}</span>}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
+
