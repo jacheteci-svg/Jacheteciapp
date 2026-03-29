@@ -1,8 +1,10 @@
 
 import { cookies } from 'next/headers';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_BASE_URL!;
+const BASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_BASE_URL || '').replace(/\/$/, '');
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!;
+
+console.log("[Supabase Server] BASE_URL:", BASE_URL);
 
 export function createClient() {
   const getAuthHeader = async () => {
@@ -14,17 +16,32 @@ export function createClient() {
     return `Bearer ${ANON_KEY}`;
   };
 
+  const safeJson = async (resp: Response) => {
+    const contentType = resp.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        return await resp.json();
+      } catch (e) {
+        throw new Error(`JSON_PARSE_ERROR: ${resp.status}`);
+      }
+    }
+    const text = await resp.text();
+    throw new Error(`INVALID_RESPONSE (${resp.status}): ${text.slice(0, 100)}...`);
+  };
+
   const client = {
     auth: {
       getUser: async () => {
         try {
+          if (!BASE_URL) throw new Error("BASE_URL is not configured.");
           const resp = await fetch(`${BASE_URL}/api/auth/sessions/current`, {
             headers: { 'Authorization': await getAuthHeader() }
           });
-          const data = await resp.json();
+          const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
           return { data: { user: data.user }, error: null };
         } catch (e: any) {
+          console.error("[getUser error]:", e);
           return { data: null, error: e };
         }
       }
@@ -63,7 +80,7 @@ export function createClient() {
           // Handle empty response for DELETE
           if (method === 'DELETE' && resp.ok) return { error: null };
 
-          const result = await resp.json();
+          const result = await safeJson(resp);
           if (!resp.ok) {
             console.error(`[REST ERROR] ${method} ${table}, Status: ${resp.status}, Error:`, result);
             return { data: null, error: result };
@@ -161,9 +178,10 @@ export function createClient() {
           },
           body: JSON.stringify(args || {})
         });
-        const data = await resp.json();
+        const data = await safeJson(resp);
         return { data, error: resp.ok ? null : data };
       } catch (e: any) {
+        console.error(`[rpc error] ${name}:`, e);
         return { data: null, error: e };
       }
     }

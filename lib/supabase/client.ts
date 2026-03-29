@@ -1,6 +1,10 @@
 
-const BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_BASE_URL!;
+const BASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_INSFORGE_BASE_URL || '').replace(/\/$/, '');
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!;
+
+if (typeof window !== 'undefined') {
+  console.log("[Supabase Client] BASE_URL:", BASE_URL);
+}
 
 export function createClient() {
   const getAuthHeader = () => {
@@ -11,10 +15,24 @@ export function createClient() {
     return `Bearer ${ANON_KEY}`;
   };
 
+  const safeJson = async (resp: Response) => {
+    const contentType = resp.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        return await resp.json();
+      } catch (e) {
+        throw new Error(`JSON_PARSE_ERROR: ${resp.status}`);
+      }
+    }
+    const text = await resp.text();
+    throw new Error(`INVALID_RESPONSE (${resp.status}): ${text.slice(0, 100)}...`);
+  };
+
   const client = {
     auth: {
       signUp: async ({ email, password, name, options }: any) => {
         try {
+          if (!BASE_URL) throw new Error("BASE_URL is not configured.");
           const resp = await fetch(`${BASE_URL}/api/auth/users`, {
             method: 'POST',
             headers: {
@@ -23,10 +41,11 @@ export function createClient() {
             },
             body: JSON.stringify({ email, password, name })
           });
-          const data = await resp.json();
+          const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
           return { data, error: null };
         } catch (e: any) {
+          console.error("[signUp error]:", e);
           return { data: null, error: e };
         }
       },
@@ -40,7 +59,7 @@ export function createClient() {
             },
             body: JSON.stringify({ email, password })
           });
-          const data = await resp.json();
+          const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
           
           if (typeof window !== 'undefined' && data.accessToken) {
@@ -49,6 +68,7 @@ export function createClient() {
           }
           return { data, error: null };
         } catch (e: any) {
+          console.error("[signIn error]:", e);
           return { data: null, error: e };
         }
       },
@@ -64,10 +84,11 @@ export function createClient() {
           const resp = await fetch(`${BASE_URL}/api/auth/sessions/current`, {
             headers: { 'Authorization': getAuthHeader() }
           });
-          const data = await resp.json();
+          const data = await safeJson(resp);
           if (!resp.ok) return { data: null, error: data };
           return { data: { user: data.user }, error: null };
         } catch (e: any) {
+          console.error("[getUser error]:", e);
           return { data: null, error: e };
         }
       }
@@ -105,7 +126,7 @@ export function createClient() {
 
           if (method === 'DELETE' && resp.ok) return { error: null };
 
-          const result = await resp.json();
+          const result = await safeJson(resp);
           if (!resp.ok) {
             console.error(`[REST ERROR] ${method} ${table}, Status: ${resp.status}, Error:`, result);
             return { data: null, error: result };
@@ -203,9 +224,10 @@ export function createClient() {
           },
           body: JSON.stringify(args || {})
         });
-        const data = await resp.json();
+        const data = await safeJson(resp);
         return { data, error: resp.ok ? null : data };
       } catch (e: any) {
+        console.error(`[rpc error] ${name}:`, e);
         return { data: null, error: e };
       }
     },
@@ -221,7 +243,7 @@ export function createClient() {
               headers: { 'Authorization': getAuthHeader() },
               body: formData
             });
-            const data = await resp.json();
+            const data = await safeJson(resp);
             if (!resp.ok) return { data: null, error: data };
             
             // Standard Supabase-like return. url is usually publicUrl-able.
