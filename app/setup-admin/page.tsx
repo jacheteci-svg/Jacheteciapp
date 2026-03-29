@@ -4,13 +4,14 @@ import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Mail, Lock, User, ArrowRight, CheckCircle2, AlertCircle, Terminal } from 'lucide-react'
+import { Shield, Mail, Lock, User, ArrowRight, CheckCircle2, AlertCircle, Terminal, Check } from 'lucide-react'
 
 const SETUP_KEY = 'JACHETE_ADMIN_2026'
 
 function AdminSetupContent() {
   const searchParams = useSearchParams()
   const key = searchParams.get('key')
+  const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
   const [step, setStep] = useState<'form' | 'verify'>('form')
   const [email, setEmail] = useState('')
@@ -18,12 +19,12 @@ function AdminSetupContent() {
   const [fullName, setFullName] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [debugError, setDebugError] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [debug, setDebug] = useState<string>('')
   
   const supabase = createClient()
-  const router = useRouter()
 
   useEffect(() => {
     if (key === SETUP_KEY) {
@@ -131,8 +132,7 @@ function AdminSetupContent() {
       })
 
     if (profileError) throw profileError
-    setSuccess(true)
-    setTimeout(() => { router.push('/login') }, 3000)
+    setShowModal(true)
   }
 
   const handleError = (err: any) => {
@@ -146,14 +146,14 @@ function AdminSetupContent() {
       msg = String(err)
     }
 
+    setDebugError(msg)
+
     if (msg.includes("ALREADY_EXISTS") || msg.toLowerCase().includes("exists")) {
       setError("Ce compte existe déjà. Veuillez utiliser la page de connexion.")
-    } else if (msg.includes("Invalid or expired")) {
+    } else if (msg.includes("Invalid or expired") || msg.includes("INVALID_INPUT")) {
       setError("Le code est invalide ou a expiré. Veuillez vérifier votre email.")
-    } else if (msg === "[object Object]" || msg === "{}" || !msg) {
-      setError("Une erreur technique est survenue. Vérifiez la console ou réessayez.")
     } else {
-      setError(msg)
+      setError("Une erreur est survenue lors de la vérification. Veuillez réessayer.")
     }
   }
 
@@ -191,18 +191,7 @@ function AdminSetupContent() {
           </div>
 
           <AnimatePresence mode="wait">
-            {success ? (
-              <motion.div 
-                key="success"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center py-10 space-y-6"
-              >
-                <CheckCircle2 className="text-green-500 w-20 h-20 mx-auto" />
-                <h2 className="text-2xl font-bold text-white">Succès !</h2>
-                <p className="text-slate-400">Compte créé et vérifié. Redirection...</p>
-              </motion.div>
-            ) : step === 'form' ? (
+            {step === 'form' ? (
               <motion.form 
                 key="form"
                 initial={{ opacity: 0 }}
@@ -226,9 +215,16 @@ function AdminSetupContent() {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3">
-                    <AlertCircle className="text-red-400 shrink-0" size={18} />
-                    <p className="text-red-400 text-sm font-bold">{error}</p>
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="text-red-400 shrink-0" size={18} />
+                      <p className="text-red-400 text-sm font-bold">{error}</p>
+                    </div>
+                    {debugError && (
+                      <p className="text-[10px] text-red-400/50 font-mono break-all pl-7">
+                        {debugError}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -258,9 +254,16 @@ function AdminSetupContent() {
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3">
-                    <AlertCircle className="text-red-400 shrink-0" size={18} />
-                    <p className="text-red-400 text-sm font-bold">{error}</p>
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="text-red-400 shrink-0" size={18} />
+                      <p className="text-red-400 text-sm font-bold">{error}</p>
+                    </div>
+                    {debugError && (
+                      <p className="text-[10px] text-red-400/50 font-mono break-all pl-7">
+                        {debugError}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -282,6 +285,36 @@ function AdminSetupContent() {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* Modal de Succès */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="bg-[#111827] border border-white/10 p-10 rounded-[2.5rem] max-w-sm w-full text-center space-y-8 shadow-2xl shadow-green-500/10"
+            >
+              <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                <Check className="w-12 h-12 text-green-500" />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-3xl font-black text-white">Félicitations !</h3>
+                <p className="text-slate-400 leading-relaxed">
+                  Votre compte administrateur est maintenant activé et prêt à l'emploi.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-5 rounded-2xl shadow-2xl shadow-orange-500/20 transition-all flex items-center justify-center gap-3 uppercase tracking-wider"
+              >
+                Accéder au Dashboard
+                <ArrowRight size={20} />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
