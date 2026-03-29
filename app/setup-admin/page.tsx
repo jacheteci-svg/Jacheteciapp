@@ -141,15 +141,19 @@ function AdminSetupContent() {
     if (typeof err === 'string') {
       msg = err
     } else if (err && typeof err === 'object') {
-      msg = err.message || err.error || JSON.stringify(err)
+      msg = err.message || err.error || (JSON.stringify(err) !== '{}' ? JSON.stringify(err) : String(err))
+    } else {
+      msg = String(err)
     }
 
     if (msg.includes("ALREADY_EXISTS") || msg.toLowerCase().includes("exists")) {
       setError("Ce compte existe déjà. Veuillez utiliser la page de connexion.")
     } else if (msg.includes("Invalid or expired")) {
       setError("Le code est invalide ou a expiré. Veuillez vérifier votre email.")
+    } else if (msg === "[object Object]" || msg === "{}" || !msg) {
+      setError("Une erreur technique est survenue. Vérifiez la console ou réessayez.")
     } else {
-      setError(msg || "Une erreur est survenue lors de la vérification.")
+      setError(msg)
     }
   }
 

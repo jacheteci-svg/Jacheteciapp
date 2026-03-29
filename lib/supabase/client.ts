@@ -42,14 +42,17 @@ export function createClient() {
           if (!resp.ok) return { data: null, error: data };
           return { data, error: null };
         } catch (e: any) {
+          const message = e.message || "Unknown error";
           console.error("[signUp error]:", e);
-          return { data: null, error: e };
+          return { data: null, error: { message } };
         }
       },
       signInWithPassword: async ({ email, password }: any) => {
         try {
           const cleanEmail = email.trim().toLowerCase();
-          const resp = await fetch(`${BASE_URL}/api/auth/sessions`, {
+          const url = `${BASE_URL}/api/auth/sessions`;
+          console.log(`[Auth] POST ${url}`);
+          const resp = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -66,8 +69,9 @@ export function createClient() {
           }
           return { data, error: null };
         } catch (e: any) {
+          const message = e.message || "Unknown error";
           console.error("[signIn error]:", e);
-          return { data: null, error: e };
+          return { data: null, error: { message } };
         }
       },
       signOut: async () => {
@@ -86,14 +90,15 @@ export function createClient() {
           if (!resp.ok) return { data: null, error: data };
           return { data: { user: data.user }, error: null };
         } catch (e: any) {
-          console.error("[getUser error]:", e);
-          return { data: null, error: e };
+          return { data: null, error: { message: e.message } };
         }
       },
       verifyEmail: async ({ email, otp }: { email: string; otp: string }) => {
         try {
           const cleanEmail = email.trim().toLowerCase();
-          const resp = await fetch(`${BASE_URL}/api/auth/email/verify`, {
+          const url = `${BASE_URL}/api/auth/email/verify`;
+          console.log(`[Auth] POST ${url}`);
+          const resp = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -110,14 +115,17 @@ export function createClient() {
           }
           return { data, error: null };
         } catch (e: any) {
+          const message = e.message || "Connection error";
           console.error("[verifyEmail error]:", e);
-          return { data: null, error: e };
+          return { data: null, error: { message } };
         }
       },
       resendVerificationEmail: async ({ email }: { email: string }) => {
         try {
           const cleanEmail = email.trim().toLowerCase();
-          const resp = await fetch(`${BASE_URL}/api/auth/email/send-verification`, {
+          const url = `${BASE_URL}/api/auth/email/send-verification`;
+          console.log(`[Auth] POST ${url}`);
+          const resp = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -129,8 +137,7 @@ export function createClient() {
           if (!resp.ok) return { data: null, error: data };
           return { data, error: null };
         } catch (e: any) {
-          console.error("[resendVerification error]:", e);
-          return { data: null, error: e };
+          return { data: null, error: { message: e.message } };
         }
       }
     },
