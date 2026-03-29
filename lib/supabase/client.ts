@@ -13,15 +13,28 @@ export function createClient() {
 
   const safeJson = async (resp: Response) => {
     const contentType = resp.headers.get('content-type');
+    let data: any = {};
     if (contentType && contentType.includes('application/json')) {
       try {
-        return await resp.json();
+        data = await resp.json();
       } catch (e) {
-        throw new Error(`JSON_PARSE_ERROR: ${resp.status}`);
+        throw new Error(`Invalid JSON from server (Status: ${resp.status})`);
+      }
+    } else {
+      const text = await resp.text();
+      if (!resp.ok) {
+        throw new Error(`Server Error ${resp.status}: ${text.slice(0, 100)}`);
       }
     }
-    const text = await resp.text();
-    throw new Error(`INVALID_RESPONSE (${resp.status}): ${text.slice(0, 100)}...`);
+
+    if (!resp.ok) {
+      return { 
+        error: true, 
+        message: data?.message || data?.error || `Request failed with status ${resp.status}`,
+        status: resp.status 
+      };
+    }
+    return data;
   };
 
   const client = {
@@ -39,12 +52,10 @@ export function createClient() {
             body: JSON.stringify({ email: cleanEmail, password, name })
           });
           const data = await safeJson(resp);
-          if (!resp.ok) return { data: null, error: data };
+          if (data?.error) return { data: null, error: data };
           return { data, error: null };
         } catch (e: any) {
-          const message = e.message || "Unknown error";
-          console.error("[signUp error]:", e);
-          return { data: null, error: { message } };
+          return { data: null, error: { message: e.message } };
         }
       },
       signInWithPassword: async ({ email, password }: any) => {
@@ -61,7 +72,7 @@ export function createClient() {
             body: JSON.stringify({ email: cleanEmail, password })
           });
           const data = await safeJson(resp);
-          if (!resp.ok) return { data: null, error: data };
+          if (data?.error) return { data: null, error: data };
           
           if (typeof window !== 'undefined' && data.accessToken) {
             localStorage.setItem('insforge_token', data.accessToken);
@@ -69,9 +80,7 @@ export function createClient() {
           }
           return { data, error: null };
         } catch (e: any) {
-          const message = e.message || "Unknown error";
-          console.error("[signIn error]:", e);
-          return { data: null, error: { message } };
+          return { data: null, error: { message: e.message } };
         }
       },
       signOut: async () => {
@@ -107,7 +116,7 @@ export function createClient() {
             body: JSON.stringify({ email: cleanEmail, otp: otp.trim() })
           });
           const data = await safeJson(resp);
-          if (!resp.ok) return { data: null, error: data };
+          if (data?.error) return { data: null, error: data };
           
           if (typeof window !== 'undefined' && data.accessToken) {
             localStorage.setItem('insforge_token', data.accessToken);
@@ -115,9 +124,7 @@ export function createClient() {
           }
           return { data, error: null };
         } catch (e: any) {
-          const message = e.message || "Connection error";
-          console.error("[verifyEmail error]:", e);
-          return { data: null, error: { message } };
+          return { data: null, error: { message: e.message } };
         }
       },
       resendVerificationEmail: async ({ email }: { email: string }) => {
