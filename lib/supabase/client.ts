@@ -27,14 +27,22 @@ export const createClient = () => {
     return clientInstance;
   }
 
-  // Use user token as anonKey — SDK passes it as Bearer in ALL requests (auth, DB, storage)
-  const activeKey = userToken || ANON_KEY;
-
-  const insforge = createInsForgeClient({
+  // Always create InsForge auth client with ANON key (required for signInWithPassword)
+  const insforgeAuth = createInsForgeClient({
     baseUrl: BASE_URL,
-    anonKey: activeKey,
+    anonKey: ANON_KEY,
     debug: process.env.NODE_ENV === 'development'
   });
+
+  // Create an authenticated client for storage/DB only if user token is available
+  const insforgeAuthed = userToken ? createInsForgeClient({
+    baseUrl: BASE_URL,
+    anonKey: userToken,
+    debug: false
+  }) : insforgeAuth;
+
+  // Use authed client for data ops, auth client for auth ops
+  const insforge = insforgeAuth;
 
   const client = {
     auth: {
@@ -101,7 +109,7 @@ export const createClient = () => {
       // ... getUser and others ...
       getUser: async () => {
         try {
-          const { data, error } = await insforge.auth.getCurrentUser();
+          const { data, error } = await insforgeAuthed.auth.getCurrentUser();
           return { data: data ? { user: data } : null, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
@@ -115,7 +123,7 @@ export const createClient = () => {
       if (typeof window !== 'undefined') {
         console.log('[Database] Querying table:', table);
       }
-      const tableRef = insforge.database.from(table);
+      const tableRef = insforgeAuthed.database.from(table);
       
       const wrap = async (promise: Promise<any>) => {
         try {
@@ -210,7 +218,7 @@ export const createClient = () => {
       from: (bucket: string) => ({
         upload: async (path: string, file: any) => {
           try {
-            const token = (typeof window !== 'undefined' ? localStorage.getItem('insforge_token') : null) || ANON_KEY;
+        const token = (typeof window !== 'undefined' ? localStorage.getItem('insforge_token') : null) || ANON_KEY;
             const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
             // Step 1: Get upload strategy
@@ -287,8 +295,8 @@ export const createClient = () => {
         }
       })
     },
-    rpc: (fn: string, args?: any) => insforge.database.rpc(fn, args),
-    insforge
+    rpc: (fn: string, args?: any) => insforgeAuthed.database.rpc(fn, args),
+    insforge: insforgeAuthed
   } as any;
 
   // Cache with token fingerprint for invalidation
