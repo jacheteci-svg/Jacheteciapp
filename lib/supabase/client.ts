@@ -209,8 +209,8 @@ export const createClient = () => {
           try {
             // Get the authenticated user token directly from localStorage
             const token = (typeof window !== 'undefined' ? localStorage.getItem('insforge_token') : null) || ANON_KEY;
-            const encodedPath = encodeURIComponent(path);
-            const uploadUrl = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${encodedPath}`;
+            // Use raw path so slashes remain as-is (e.g. products/file.png)
+            const uploadUrl = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${path}`;
 
             const formData = new FormData();
             formData.append('file', file);
@@ -229,14 +229,15 @@ export const createClient = () => {
             }
 
             const data = await res.json();
-            return { data, error: null };
+            // data might have a 'url' or 'key' field - build public URL from path if not
+            const publicUrl = data?.url || `${BASE_URL}/api/storage/buckets/${bucket}/objects/${path}`;
+            return { data: { ...data, url: publicUrl }, error: null };
           } catch (e: any) {
             return { data: null, error: { message: e.message } };
           }
         },
         getPublicUrl: (path: string) => {
-          const encodedPath = encodeURIComponent(path);
-          const url = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${encodedPath}`;
+          const url = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${path}`;
           return { data: { publicUrl: url } };
         }
       })
