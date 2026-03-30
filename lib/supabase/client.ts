@@ -207,15 +207,34 @@ export const createClient = () => {
       from: (bucket: string) => ({
         upload: async (path: string, file: any) => {
           try {
-            const { data, error } = await insforge.storage.from(bucket).upload(path, file);
-            return { data, error: error ? { message: (error as any).message || String(error) } : null };
+            // Get the authenticated user token directly from localStorage
+            const token = (typeof window !== 'undefined' ? localStorage.getItem('insforge_token') : null) || ANON_KEY;
+            const encodedPath = encodeURIComponent(path);
+            const uploadUrl = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${encodedPath}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch(uploadUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+              body: formData,
+            });
+
+            if (!res.ok) {
+              const errBody = await res.text();
+              return { data: null, error: { message: `Upload failed (${res.status}): ${errBody}` } };
+            }
+
+            const data = await res.json();
+            return { data, error: null };
           } catch (e: any) {
             return { data: null, error: { message: e.message } };
           }
         },
         getPublicUrl: (path: string) => {
-          // Construct the URL manually if getPublicUrl is not in SDK, 
-          // but usually it's BASE_URL/api/storage/buckets/BUCKET/objects/PATH
           const encodedPath = encodeURIComponent(path);
           const url = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${encodedPath}`;
           return { data: { publicUrl: url } };

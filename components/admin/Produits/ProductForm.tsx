@@ -62,10 +62,11 @@ export default function ProductForm({ categories, initialData, onSuccess }: Prod
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
         const filePath = `products/${fileName}`
 
-        const { error } = await supabase.storage.from('produits').upload(filePath, compressedFile)
+        const { data: uploadData, error } = await supabase.storage.from('produits').upload(filePath, compressedFile)
         if (error) throw error
         
-        const { data: { publicUrl } } = supabase.storage.from('produits').getPublicUrl(filePath)
+        // Use the URL returned by the upload if available, otherwise build it manually
+        const publicUrl = uploadData?.url || supabase.storage.from('produits').getPublicUrl(filePath).data.publicUrl
         setPhotos(prev => [...prev, { url: publicUrl, est_principale: prev.length === 0, ordre: prev.length }])
       }
     } catch (err: any) {
