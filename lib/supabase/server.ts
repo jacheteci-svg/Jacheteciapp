@@ -52,25 +52,32 @@ export const createClient = async () => {
     },
     from: (table: string) => {
       const tableRef = insforge.database.from(table);
+      
+      const createChain = (query: any) => {
+        const chain: any = {
+          select: (columns?: string) => createChain((query as any).select(columns === '*' ? undefined : columns)),
+          eq: (col: string, val: any) => createChain(typeof query.eq === 'function' ? query.eq(col, val) : query),
+          gte: (col: string, val: any) => createChain(typeof query.gte === 'function' ? query.gte(col, val) : query),
+          lte: (col: string, val: any) => createChain(typeof query.lte === 'function' ? query.lte(col, val) : query),
+          order: (col: string, opts?: any) => createChain(typeof query.order === 'function' ? query.order(col, opts) : query),
+          limit: (count: number) => createChain(typeof query.limit === 'function' ? query.limit(count) : query),
+          single: async () => {
+            const res = await wrap(query);
+            if (res.data && Array.isArray(res.data)) res.data = res.data[0] || null;
+            return res;
+          },
+          maybeSingle: async () => {
+             const res = await wrap(query);
+             if (res.data && Array.isArray(res.data)) res.data = res.data[0] || null;
+             return res;
+          },
+          then: (resolve: any) => resolve(wrap(query))
+        };
+        return chain;
+      };
+
       return {
-        select: (columns?: string) => {
-          let query = (tableRef as any).select(columns === '*' ? undefined : columns);
-          
-          const chain = {
-            eq: (col: string, val: any) => {
-               if (typeof query.eq === 'function') query = query.eq(col, val);
-               return chain;
-            },
-            single: async () => {
-               const res = await wrap(query);
-               if (res.data && Array.isArray(res.data)) res.data = res.data[0] || null;
-               return res;
-            },
-            then: (resolve: any) => resolve(wrap(query))
-          };
-          
-          return chain as any;
-        },
+        select: (columns?: string) => createChain(tableRef.select(columns === '*' ? undefined : columns)),
         insert: (values: any) => wrap((tableRef as any).insert(Array.isArray(values) ? values : [values])),
         upsert: async (values: any) => {
           const records = Array.isArray(values) ? values : [values];
