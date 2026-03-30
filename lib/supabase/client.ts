@@ -67,18 +67,28 @@ export const createClient = () => {
       },
       signInWithPassword: async (options: any) => {
         try {
-          const { data, error } = await insforge.auth.signInWithPassword(options);
-          if (data?.accessToken && typeof window !== 'undefined') {
-             localStorage.setItem('insforge_token', data.accessToken);
-             document.cookie = `insforge_token=${data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
-             client.auth.updateToken(data.accessToken);
+          // Direct API call — no Authorization header needed for login
+          const res = await fetch(`${BASE_URL}/api/auth/sessions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: options.email, password: options.password }),
+            credentials: 'include',
+          });
+          const json = await res.json();
+          if (!res.ok) {
+            return { data: null, error: { message: json.message || 'Invalid credentials' } };
           }
-          // Wrap in session for Supabase compatibility
-          const formattedData = data ? { 
-            session: { access_token: data.accessToken, user: data.user }, 
-            user: data.user 
-          } : null;
-          return { data: formattedData, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
+          const accessToken = json.accessToken;
+          if (accessToken && typeof window !== 'undefined') {
+            localStorage.setItem('insforge_token', accessToken);
+            document.cookie = `insforge_token=${accessToken}; path=/; max-age=604800; SameSite=Lax`;
+          }
+          const formattedData = {
+            session: { access_token: accessToken, user: json.user },
+            user: json.user,
+            requireEmailVerification: json.requireEmailVerification || false,
+          };
+          return { data: formattedData, error: null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
