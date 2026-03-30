@@ -12,24 +12,27 @@ if (typeof window !== 'undefined') {
 let clientInstance: any = null;
 
 export const createClient = () => {
-  // Return existing instance in browser to maintain state
-  if (typeof window !== 'undefined' && clientInstance) {
-    return clientInstance;
-  }
-
-  // Get token from storage/cookies for persistence
-  let token = '';
+  // Get token from storage/cookies
+  let userToken = '';
   if (typeof window !== 'undefined') {
-    token = localStorage.getItem('insforge_token') || '';
-    if (!token) {
+    userToken = localStorage.getItem('insforge_token') || '';
+    if (!userToken) {
       const match = document.cookie.match(/insforge_token=([^;]+)/);
-      if (match) token = match[1];
+      if (match) userToken = match[1];
     }
   }
 
+  // Reuse cached instance only if token hasn't changed
+  if (typeof window !== 'undefined' && clientInstance && clientInstance._token === userToken) {
+    return clientInstance;
+  }
+
+  // Use user token as anonKey — SDK passes it as Bearer in ALL requests (auth, DB, storage)
+  const activeKey = userToken || ANON_KEY;
+
   const insforge = createInsForgeClient({
     baseUrl: BASE_URL,
-    anonKey: ANON_KEY,
+    anonKey: activeKey,
     debug: process.env.NODE_ENV === 'development'
   });
 
@@ -288,9 +291,10 @@ export const createClient = () => {
     insforge
   } as any;
 
+  // Cache with token fingerprint for invalidation
   if (typeof window !== 'undefined') {
+    client._token = userToken;
     clientInstance = client;
-    if (token) client.auth.updateToken(token);
   }
 
   return client;
