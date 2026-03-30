@@ -207,31 +207,73 @@ export const createClient = () => {
       from: (bucket: string) => ({
         upload: async (path: string, file: any) => {
           try {
-            // Get the authenticated user token directly from localStorage
             const token = (typeof window !== 'undefined' ? localStorage.getItem('insforge_token') : null) || ANON_KEY;
-            // Use raw path so slashes remain as-is (e.g. products/file.png)
-            const uploadUrl = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${path}`;
+            const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const res = await fetch(uploadUrl, {
+            // Step 1: Get upload strategy
+            const strategyRes = await fetch(`${BASE_URL}/api/storage/buckets/${bucket}/upload-strategy`, {
               method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
-              body: formData,
+              headers,
+              body: JSON.stringify({
+                filename: file.name || path.split('/').pop(),
+                contentType: file.type || 'application/octet-stream',
+                size: file.size,
+              }),
             });
 
-            if (!res.ok) {
-              const errBody = await res.text();
-              return { data: null, error: { message: `Upload failed (${res.status}): ${errBody}` } };
+            if (!strategyRes.ok) {
+              const errBody = await strategyRes.text();
+              return { data: null, error: { message: `Strategy failed (${strategyRes.status}): ${errBody}` } };
             }
 
-            const data = await res.json();
-            // data might have a 'url' or 'key' field - build public URL from path if not
-            const publicUrl = data?.url || `${BASE_URL}/api/storage/buckets/${bucket}/objects/${path}`;
-            return { data: { ...data, url: publicUrl }, error: null };
+            const strategy = await strategyRes.json();
+            const formData = new FormData();
+
+            let uploadRes: Response;
+
+            if (strategy.method === 'presigned') {
+              // S3 presigned upload
+              // Include all required S3 fields
+              if (strategy.fields) {
+                Object.entries(strategy.fields).forEach(([k, v]) => formData.append(k, v as string));
+              }
+              formData.append('file', file);
+              uploadRes = await fetch(strategy.uploadUrl, { method: 'POST', body: formData });
+            } else {
+              // Direct upload (local storage) — PUT to uploadUrl
+              const directUrl = strategy.uploadUrl.startsWith('http')
+                ? strategy.uploadUrl
+                : `${BASE_URL}${strategy.uploadUrl}`;
+              formData.append('file', file);
+              uploadRes = await fetch(directUrl, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+              });
+            }
+
+            if (!uploadRes.ok) {
+              const errBody = await uploadRes.text();
+              return { data: null, error: { message: `Upload failed (${uploadRes.status}): ${errBody}` } };
+            }
+
+            // Step 3: Confirm if required (S3)
+            if (strategy.confirmRequired && strategy.confirmUrl) {
+              const confirmUrl = strategy.confirmUrl.startsWith('http')
+                ? strategy.confirmUrl
+                : `${BASE_URL}${strategy.confirmUrl}`;
+              await fetch(confirmUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ size: file.size, contentType: file.type }),
+              });
+            }
+
+            // Build public URL. The 'key' returned is the actual object key
+            const key = strategy.key || path;
+            const publicUrl = `${BASE_URL}/api/storage/buckets/${bucket}/objects/${key}`;
+            return { data: { url: publicUrl, key }, error: null };
+
           } catch (e: any) {
             return { data: null, error: { message: e.message } };
           }
