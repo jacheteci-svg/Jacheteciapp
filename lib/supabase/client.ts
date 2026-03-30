@@ -30,17 +30,26 @@ export const createClient = () => {
   const insforge = createInsForgeClient({
     baseUrl: BASE_URL,
     anonKey: ANON_KEY,
-    // @ts-ignore - Support passing initial token if SDK allows
-    accessToken: token,
     debug: process.env.NODE_ENV === 'development'
   });
 
   const client = {
     auth: {
+      updateToken: (newToken: string) => {
+        if (!newToken) return;
+        // Try various common SDK patterns for setting token
+        if (typeof (insforge.auth as any).setAccessToken === 'function') {
+           (insforge.auth as any).setAccessToken(newToken);
+        } else if ((insforge as any).setAccessToken === 'function') {
+           (insforge as any).setAccessToken(newToken);
+        } else if ((insforge as any).options) {
+           (insforge as any).options.accessToken = newToken;
+        }
+      },
       signUp: async (options: any) => {
         try {
           const { data, error } = await insforge.auth.signUp(options);
-          return { data, error: error ? { message: error.message, status: error.statusCode } : null };
+          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
@@ -51,54 +60,55 @@ export const createClient = () => {
           if (data?.accessToken && typeof window !== 'undefined') {
              localStorage.setItem('insforge_token', data.accessToken);
              document.cookie = `insforge_token=${data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
+             client.auth.updateToken(data.accessToken);
           }
-          return { data, error: error ? { message: error.message, status: error.statusCode } : null };
+          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
       },
-      signOut: async () => insforge.auth.signOut(),
+      signOut: async () => {
+        localStorage.removeItem('insforge_token');
+        document.cookie = "insforge_token=; path=/; max-age=0";
+        return insforge.auth.signOut();
+      },
       verifyEmail: async (options: any) => {
         try {
           const { data, error } = await insforge.auth.verifyEmail(options);
           if (data?.accessToken && typeof window !== 'undefined') {
              localStorage.setItem('insforge_token', data.accessToken);
              document.cookie = `insforge_token=${data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
+             client.auth.updateToken(data.accessToken);
           }
-          return { data, error: error ? { message: error.message, status: error.statusCode } : null };
+          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
       },
-      resendVerificationEmail: async (options: any) => {
-        try {
-           const { data, error } = await insforge.auth.resendVerificationEmail(options);
-           return { data, error: error ? { message: error.message, status: error.statusCode } : null };
-        } catch (e: any) {
-           return { data: null, error: { message: e.message } };
-        }
-      },
+      // ... getUser and others ...
       getUser: async () => {
         try {
           const { data, error } = await insforge.auth.getCurrentUser();
-          return { data, error: error ? { message: error.message, status: error.statusCode } : null };
+          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
       },
       onAuthStateChange: (callback: any) => {
-        // Simple mock: doesn't do much but prevents crashes
         return { data: { subscription: { unsubscribe: () => {} } } };
       }
     },
-    // Map .from() to the official database module
     from: (table: string) => {
       const tableRef = insforge.database.from(table);
       
       const wrap = async (promise: Promise<any>) => {
         try {
           const { data, error } = await promise;
-          return { data, error: error ? { message: error.message, status: error.statusCode || 500 } : null };
+          if (error) {
+             const msg = (error as any).message || (typeof error === 'string' ? error : JSON.stringify(error));
+             return { data: null, error: { message: msg, status: (error as any).statusCode || 500 } };
+          }
+          return { data, error: null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
@@ -186,6 +196,7 @@ export const createClient = () => {
 
   if (typeof window !== 'undefined') {
     clientInstance = client;
+    if (token) client.auth.updateToken(token);
   }
 
   return client;

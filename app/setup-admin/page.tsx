@@ -147,45 +147,20 @@ function AdminSetupContent() {
 
   const syncAdminTables = async (userId: string) => {
     try {
-      console.log("[SetupAdmin] Début de la synchronisation pour:", userId);
-      
-      // 1. Update/Create Profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: userId,
-          email: email.trim().toLowerCase(),
-          full_name: fullName,
-          role: 'SUPER_ADMIN',
-          permissions: {
-            staff: true, revenue: true, settings: true, dashboard: true, inventory: true, establishments: true
-          }
-        })
+      // 1. Sync all tables via a single RPC call (Robust & Atomic)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('sync_admin_profile', {
+        p_user_id: userId,
+        p_email: email.trim().toLowerCase(),
+        p_full_name: fullName
+      })
 
-      if (profileError) {
-        console.error("[SetupAdmin] Erreur table 'profiles':", profileError);
-        throw new Error(`Table 'profiles' : ${profileError.message || JSON.stringify(profileError)}`);
+      if (rpcError || (rpcData && (rpcData as any).success === false)) {
+        const msg = rpcError?.message || (rpcData as any)?.error || "Échec de la synchronisation RPC";
+        console.error("[SetupAdmin] Error sync_admin_profile:", rpcError || rpcData);
+        throw new Error(`Table Sync : ${msg}`);
       }
 
-      // 2. Update/Create utilisateurs_admin (used by dashboard filters)
-      const { error: adminError } = await supabase
-        .from('utilisateurs_admin')
-        .upsert({
-          id: userId,
-          nom: fullName,
-          email: email.trim().toLowerCase(),
-          role: 'SUPER_ADMIN',
-          actif: true
-        })
-
-      if (adminError) {
-        console.error("[SetupAdmin] Erreur table 'utilisateurs_admin':", adminError);
-        // Important but not always critical if profiles worked. 
-        // However, we want full perfection as requested.
-        throw new Error(`Table 'utilisateurs_admin' : ${adminError.message || JSON.stringify(adminError)}`);
-      }
-
-      console.log("[SetupAdmin] Synchronisation terminée avec succès.");
+      console.log("[SetupAdmin] Synchronisation terminée avec succès via RPC.");
       setShowModal(true)
     } catch (e: any) {
       console.error("[SetupAdmin] Échec de la synchronisation:", e);
