@@ -44,7 +44,10 @@ export const createClient = async () => {
 
   return {
     auth: {
-      getUser: async () => wrap(insforge.auth.getCurrentUser()),
+      getUser: async () => {
+        const { data, error } = await wrap(insforge.auth.getCurrentUser());
+        return { data: data ? { user: data } : null, error };
+      },
       signOut: async () => insforge.auth.signOut(),
     },
     from: (table: string) => {

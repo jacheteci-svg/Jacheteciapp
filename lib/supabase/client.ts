@@ -62,7 +62,12 @@ export const createClient = () => {
              document.cookie = `insforge_token=${data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
              client.auth.updateToken(data.accessToken);
           }
-          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
+          // Wrap in session for Supabase compatibility
+          const formattedData = data ? { 
+            session: { access_token: data.accessToken, user: data.user }, 
+            user: data.user 
+          } : null;
+          return { data: formattedData, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
@@ -80,7 +85,12 @@ export const createClient = () => {
              document.cookie = `insforge_token=${data.accessToken}; path=/; max-age=604800; SameSite=Lax`;
              client.auth.updateToken(data.accessToken);
           }
-          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
+          // Wrap in session for Supabase compatibility
+          const formattedData = data ? { 
+            session: { access_token: data.accessToken, user: data.user }, 
+            user: data.user 
+          } : null;
+          return { data: formattedData, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
@@ -89,7 +99,7 @@ export const createClient = () => {
       getUser: async () => {
         try {
           const { data, error } = await insforge.auth.getCurrentUser();
-          return { data, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
+          return { data: data ? { user: data } : null, error: error ? { message: (error as any).message || String(error), status: (error as any).statusCode } : null };
         } catch (e: any) {
           return { data: null, error: { message: e.message } };
         }
