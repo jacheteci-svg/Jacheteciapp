@@ -52,10 +52,11 @@ export const createClient = async () => {
       return {
         select: (columns?: string) => {
           let query = (tableRef as any).select(columns === '*' ? undefined : columns);
-          return {
+          
+          const chain = {
             eq: (col: string, val: any) => {
                if (typeof query.eq === 'function') query = query.eq(col, val);
-               return this;
+               return chain;
             },
             single: async () => {
                const res = await wrap(query);
@@ -63,7 +64,9 @@ export const createClient = async () => {
                return res;
             },
             then: (resolve: any) => resolve(wrap(query))
-          } as any;
+          };
+          
+          return chain as any;
         },
         insert: (values: any) => wrap((tableRef as any).insert(Array.isArray(values) ? values : [values])),
         upsert: async (values: any) => {
