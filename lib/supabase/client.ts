@@ -99,6 +99,9 @@ export const createClient = () => {
       }
     },
     from: (table: string) => {
+      if (typeof window !== 'undefined') {
+        console.log('[Database] Querying table:', table);
+      }
       const tableRef = insforge.database.from(table);
       
       const wrap = async (promise: Promise<any>) => {
