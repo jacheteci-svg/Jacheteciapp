@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ProductList from '@/components/admin/Produits/ProductList'
-import ProductForm from '@/components/admin/Produits/ProductForm'
+import SimpleProductForm from '@/components/admin/Produits/SimpleProductForm'
 import { Plus, Search, Package, Save, Loader2, X, Filter } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Modal from '@/components/ui/Modal'
@@ -157,7 +157,7 @@ function AdminProduitsContent() {
             maxWidth="max-w-6xl"
           >
              <div className="max-h-[85vh] overflow-y-auto pr-4 custom-scrollbar">
-                <ProductForm 
+                <SimpleProductForm 
                   categories={categories} 
                   initialData={editingProduct} 
                   onSuccess={handleFormSuccess}

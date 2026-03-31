@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import ProductForm from '@/components/admin/Produits/ProductForm'
+import SimpleProductForm from '@/components/admin/Produits/SimpleProductForm'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
@@ -23,7 +23,7 @@ export default async function NouveauProduitPage() {
         </div>
       </header>
 
-      <ProductForm categories={categories || []} />
+      <SimpleProductForm categories={categories || []} />
     </div>
   )
 }
